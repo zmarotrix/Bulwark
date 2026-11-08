@@ -11,6 +11,11 @@ Powered by NorgannonDB.
 | Cyan | on another tank | on a tank |
 | Grey | on nobody | on nobody |
 
-`/bulwark` opens the settings. Also: `on`, `off`, `tank`, `dps`, `auto`, `status`.
+**The mob list**, in the spirit of Cursive: a small window with every enemy in the fight, its health, who it's on (the
+colours above), and your own DoTs and debuffs on it with the seconds left. Raid marks come first, skull at the top, and
+your target has a white edge. The game hides auras from add-ons in combat, so the timers come from your own casts on
+your target, and are corrected by what Bulwark reads out of combat. Rows don't target on click (yet).
+
+`/bulwark` opens the settings. Also: `on`, `off`, `tank`, `dps`, `auto`, `list` (preview the mob list), `status`.
 
 Copyright (c) 2026 Maro. All rights reserved.

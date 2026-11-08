@@ -43,6 +43,16 @@ B.DEFAULTS = {
     where = "above",      -- "above" the name, or "left" of the bar where Blizzard puts its own
     backdrop = true,      -- a soft dark disc behind the mark, so it stands out on a busy screen
   },
+  list = {
+    enabled = true,       -- the mob list (mobs.lua): every enemy in the fight, its health, and your DoTs on it
+    combatOnly = true,    -- only mobs in combat (and any carrying one of your debuffs)
+    dots = true,          -- your DoTs and debuffs with the seconds left
+    rows = 8,
+    width = 150,
+    height = 18,
+    locked = false,
+    learned = {},         -- spell name -> seconds, read off a mob out of combat (talents and ranks included)
+  },
   scheme = "default",      -- a key of B.SCHEMES, or "custom" once you change a colour yourself
   colors = {
     me = { 0.2, 0.85, 0.25 },
@@ -112,6 +122,7 @@ Core:NewAddon("bulwark", {
     tank = { setMode("tank"), "always tank mode" },
     dps = { setMode("dps"), "never tank mode" },
     auto = { setMode("auto"), "tank mode when your role, form or stance says so" },
+    list = { function() if B.MobList then B.MobList:Preview() end end, "show the mob list with sample mobs, to move it" },
     status = { function()
       B:Print(("%s. Mode: %s (%s now). Flash: %s at %d%%.")
         :format(B.db.enabled and "On" or "Off", MODES[B.db.mode] or B.db.mode, B:TankMode() and "tanking" or "not tanking",
@@ -496,4 +507,5 @@ end)
 function B:Changed()
   self:UpdateAll()
   if self.Marks then self.Marks:UpdateAll() end
+  if self.MobList then self.MobList:Changed() end
 end

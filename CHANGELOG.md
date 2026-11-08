@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0, 2026-11-07
+
+- **The mob list**, Bulwark's take on Cursive: a small window with every enemy in the fight. Each row has the raid mark,
+  the mob's name and health %, a health bar in the plate colour for who it's on (and the flash's glow when you're about to
+  lose it), and your own DoTs and debuffs on it with the seconds left, soonest to run out first.
+- Marked mobs first (skull, cross, circle, ...), then in the order they joined the fight. Your target has a white edge and
+  always keeps a row.
+- The timers come from your casts on your target, since the game hides auras from add-ons in combat. Out of combat
+  Bulwark reads the real timers and learns how long each of your spells lasts, so talents and ranks come right.
+- Settings: on or off, only mobs in combat, DoTs on or off, how many rows, bar width, row height, lock, and a Preview
+  with sample mobs to place it. `/bulwark list` shows the preview too.
+
 ## 0.5.0, 2026-11-07
 
 - Built on NorgannonDB Core 1.20's `Core:NewAddon`: the same commands, settings and minimap row, with a quarter of the
