@@ -51,6 +51,8 @@ B.DEFAULTS = {
     width = 150,
     height = 18,
     locked = false,
+    background = 0,       -- the panel behind the rows, 0-100 %; 0 leaves just the handle and the bars
+    click = true,         -- rows are secure buttons: click one to target that mob, in combat too (clicks.lua)
     learned = {},         -- spell name -> seconds, read off a mob out of combat (talents and ranks included)
   },
   scheme = "default",      -- a key of B.SCHEMES, or "custom" once you change a colour yourself

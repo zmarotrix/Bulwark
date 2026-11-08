@@ -72,7 +72,10 @@ Core:OnLogin(function()
   list:Slider("Most mobs shown", "Your target always keeps a row.", 3, 20, 1, function() return B.db.list.rows end, function(v) B.db.list.rows = v B:Changed() end, "%.0f", 1)
   list:Slider("Bar width", nil, 90, 260, 10, function() return B.db.list.width end, function(v) B.db.list.width = v B:Changed() end, "%.0f px", 1)
   list:Slider("Row height", nil, 14, 30, 1, function() return B.db.list.height end, function(v) B.db.list.height = v B:Changed() end, "%.0f px", 1)
-  list:Toggle("Lock it in place", "Off, drag the list anywhere by any row.", ml("locked"))
+  list:Toggle("Click a row to target it", "Works in combat. The game only lets secure buttons target, and it lays them out itself during a fight, so in combat the rows go in the order mobs appeared (marked mobs first, as marked before the pull), and a mob not yet in the fight shows dimmed. Off, the list sorts freely but rows can't be clicked.", ml("click"))
+  list:Slider("Background", "The panel behind the rows. At 0 only the Bulwark handle and the bars show.", 0, 100, 5,
+    function() return B.db.list.background end, function(v) B.db.list.background = v B:Changed() end, "%.0f%%", 1)
+  list:Toggle("Lock it in place", "Off, drag the list by the Bulwark mark and name above it.", ml("locked"))
   list:Buttons("Place it", "Shows sample mobs so you can move and size the list out of combat. /bulwark list does the same.", {
     { "Preview", function() B.MobList:Preview() end },
     { "Reset position", function() B.MobList:ResetPosition() end },

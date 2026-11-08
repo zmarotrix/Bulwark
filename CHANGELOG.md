@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0, 2026-11-07
+
+- **Click a row to target that mob, in combat too.** The rows are the game's own secure unit buttons, and the game lays
+  them out itself during a fight: mobs you can attack, in the order they appeared, with mobs marked before the pull
+  first (skull at the top). A mob not in the fight yet shows dimmed. Hovering a row shows the mob's tooltip. Turning
+  "Click a row to target it" off brings back the freely sorted list that can't be clicked.
+- **The suite's look**: on top, a handle with the Bulwark mark and name that you drag to move the list; below it the rows,
+  each a dark well with a 1px edge (gold on your target, soft gold under the mouse), the suite's fonts, and your DoTs as
+  framed icons that edge in red in their last 3 seconds.
+- **Background** slider: the stone-and-gold panel behind the rows, from 0 (the default: just the handle and the bars) to
+  100%.
+
 ## 0.6.0, 2026-11-07
 
 - **The mob list**, Bulwark's take on Cursive: a small window with every enemy in the fight. Each row has the raid mark,

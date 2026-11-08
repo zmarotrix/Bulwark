@@ -236,7 +236,6 @@ end
 
 local MAX_DOTS = 6
 local HOSTILE, NEUTRAL = { 0.6, 0.22, 0.18 }, { 0.85, 0.7, 0.2 }
-local BAR_TEX = "Interface\\TargetingFrame\\UI-StatusBar"
 local SAVE_KEY = "BulwarkMobList"
 
 local percentCurve
@@ -256,139 +255,220 @@ local function curve()
   return percentCurve or nil
 end
 
-local function startDrag() if L.frame and not B.db.list.locked then L.frame:StartMoving() end end
+-- the frame being shown: the secure one while it's in use, else the plain one
+local function mover()
+  local S = L.Secure
+  if S and S.header and S.header:IsShown() then return S.header end
+  return L.frame
+end
+local function startDrag()
+  local f = mover()
+  if f and not B.db.list.locked and not InCombatLockdown() then f:StartMoving() f.moving = true end
+end
 local function stopDrag()
-  if not L.frame then return end
-  L.frame:StopMovingOrSizing()
-  UI.SavePosition(L.frame, SAVE_KEY)
+  local f = mover()
+  if not (f and f.moving) then return end
+  f.moving = nil
+  f:StopMovingOrSizing()
+  UI.SavePosition(f, SAVE_KEY)
+  for _, other in ipairs({ L.frame, L.Secure and L.Secure.header }) do
+    if other and other ~= f and not InCombatLockdown() then UI.RestorePosition(other, SAVE_KEY) end
+  end
 end
 
-local function makeRow(f)
+L.StartDrag, L.StopDrag = startDrag, stopDrag
+
+---One row's pieces, in the suite's look: a dark well with a 1px edge (gold on your target), the bar inside it, the
+---name in the suite's bold face, and your debuffs as framed icons. passive: it sits on a secure button that takes the
+---mouse (clicks.lua).
+function L:MakeRow(f, passive)
   local r = CreateFrame("Frame", nil, f)
-  r:EnableMouse(true)
-  r:RegisterForDrag("LeftButton")
-  r:SetScript("OnDragStart", startDrag)
-  r:SetScript("OnDragStop", stopDrag)
-  r.targetEdge = r:CreateTexture(nil, "OVERLAY")
-  r.targetEdge:SetColorTexture(1, 1, 1, 0.9)
+  if passive then
+    r:EnableMouse(false)
+  else
+    r:EnableMouse(true)
+    r:RegisterForDrag("LeftButton")
+    r:SetScript("OnDragStart", startDrag)
+    r:SetScript("OnDragStop", stopDrag)
+  end
   r.mark = r:CreateTexture(nil, "ARTWORK")
   r.mark:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
-  r.bar = CreateFrame("StatusBar", nil, r)
-  r.bar:SetStatusBarTexture(BAR_TEX)
+  r.well = CreateFrame("Frame", nil, r)
+  r.box = UI.Box(r.well, "BACKGROUND", 0)
+  r.bar = CreateFrame("StatusBar", nil, r.well)
+  r.bar:SetPoint("TOPLEFT", 1, -1)
+  r.bar:SetPoint("BOTTOMRIGHT", -1, 1)
+  r.bar:SetStatusBarTexture(UI.TEX.white)
   r.bar:SetMinMaxValues(0, 1)
   r.bar:SetValue(1)
-  r.bar.bg = r.bar:CreateTexture(nil, "BACKGROUND")
-  r.bar.bg:SetAllPoints()
-  r.bar.bg:SetColorTexture(0, 0, 0, 0.6)
-  r.warn = r.bar:CreateTexture(nil, "OVERLAY")
-  r.warn:SetColorTexture(1, 1, 1, 0.35)
+  -- a soft sheen on the top half, so the flat colour reads as a bar
+  r.sheen = r.bar:CreateTexture(nil, "OVERLAY", nil, 1)
+  r.sheen:SetPoint("TOPLEFT")
+  r.sheen:SetPoint("RIGHT")
+  UI.Gradient(r.sheen, { 1, 1, 1 }, { 1, 1, 1 }, 0.16, 0)
+  r.warn = r.bar:CreateTexture(nil, "OVERLAY", nil, 2)
+  r.warn:SetColorTexture(1, 1, 1, 0.3)
   r.warn:SetBlendMode("ADD")
   r.warn:SetAllPoints()
-  r.name = r.bar:CreateFontString(nil, "OVERLAY")
-  r.hp = r.bar:CreateFontString(nil, "OVERLAY")
+  r.name = r.bar:CreateFontString(nil, "OVERLAY", nil, 3)
+  r.hp = r.bar:CreateFontString(nil, "OVERLAY", nil, 3)
   r.hp:SetJustifyH("RIGHT")
   r.name:SetJustifyH("LEFT")
   r.name:SetWordWrap(false)
   r.dots = {}
   for i = 1, MAX_DOTS do
     local d = CreateFrame("Frame", nil, r)
+    d.box = UI.Box(d, "BACKGROUND", 0)
+    d.box:Set(UI.C.black, UI.C.black)
     d.icon = d:CreateTexture(nil, "ARTWORK")
-    d.icon:SetAllPoints()
+    d.icon:SetPoint("TOPLEFT", 1, -1)
+    d.icon:SetPoint("BOTTOMRIGHT", -1, 1)
     d.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    d.shade = d:CreateTexture(nil, "ARTWORK", nil, 1)
+    d.shade:SetAllPoints(d.icon)
+    d.shade:SetColorTexture(0, 0, 0, 0.35)
     d.time = d:CreateFontString(nil, "OVERLAY")
     d.time:SetPoint("CENTER", 0, 0)
     d:Hide()
     r.dots[i] = d
   end
-  r:SetScript("OnEnter", function(self)
-    if not self.unit then return end
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    if not Core.SetSecret(GameTooltip, "SetUnit", self.unit) then GameTooltip:Hide() return end
-    GameTooltip:Show()
-  end)
-  r:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  function r:SetTarget(on)
+    self.isTarget = on
+    self.box:Set(on and UI.C.gold or (self.hover and UI.C.goldSoft or UI.C.black), { UI.C.inset[1], UI.C.inset[2], UI.C.inset[3], 0.85 })
+  end
+  r:SetTarget(false)
+  if not passive then
+    r:SetScript("OnEnter", function(self) L.Tooltip(self, self.unit) end)
+    r:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  end
   return r
 end
 
+function L.Tooltip(owner, unit)
+  if not unit then return end
+  GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+  if not Core.SetSecret(GameTooltip, "SetUnit", unit) then GameTooltip:Hide() return end
+  GameTooltip:Show()
+end
+
+local HANDLE_H = 26   -- the mark and name on top; rows start below it
+L.HANDLE_H = HANDLE_H
+
 ---Size and place every piece of a row from the settings.
 function L:Layout(r, i)
+  r:ClearAllPoints()
+  r:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 4, -(HANDLE_H + 4 + (i - 1) * (B.db.list.height + 3)))
+  r:SetSize(self:Width() - 8, B.db.list.height)
+  self:LayoutParts(r)
+end
+
+---The pieces inside a row.
+function L:LayoutParts(r)
   local db = B.db.list
   local h, w = db.height, db.width
-  local font = rawget(_G, "STANDARD_TEXT_FONT") or "Fonts\\FRIZQT__.TTF"
-  local size = math.max(8, math.floor(h * 0.6))
-  r:ClearAllPoints()
-  r:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 4, -(20 + (i - 1) * (h + 2)))
-  r:SetSize(self:Width() - 8, h)
-  r.targetEdge:ClearAllPoints()
-  r.targetEdge:SetPoint("TOPLEFT", 0, 0)
-  r.targetEdge:SetSize(3, h)
+  local size = math.max(9, math.floor(h * 0.62))
   r.mark:ClearAllPoints()
-  r.mark:SetPoint("LEFT", 5, 0)
+  r.mark:SetPoint("LEFT", 0, 0)
   r.mark:SetSize(h, h)
-  r.bar:ClearAllPoints()
-  r.bar:SetPoint("LEFT", r.mark, "RIGHT", 3, 0)
-  r.bar:SetSize(w, h)
-  pcall(r.name.SetFont, r.name, font, size, "OUTLINE")
-  pcall(r.hp.SetFont, r.hp, font, size, "OUTLINE")
+  r.well:ClearAllPoints()
+  r.well:SetPoint("LEFT", r.mark, "RIGHT", 4, 0)
+  r.well:SetSize(w, h)
+  r.sheen:SetHeight(math.max(1, math.floor((h - 2) / 2)))
+  r.name:SetFontObject(UI.Font("bold", size))
+  r.name:SetTextColor(UI.C.text[1], UI.C.text[2], UI.C.text[3])
+  r.hp:SetFontObject(UI.Font("body", size))
+  r.hp:SetTextColor(UI.C.text[1], UI.C.text[2], UI.C.text[3])
   r.hp:ClearAllPoints()
-  r.hp:SetPoint("RIGHT", r.bar, "RIGHT", -3, 0)
+  r.hp:SetPoint("RIGHT", r.bar, "RIGHT", -4, 0)
   r.name:ClearAllPoints()
-  r.name:SetPoint("LEFT", r.bar, "LEFT", 3, 0)
-  r.name:SetPoint("RIGHT", r.hp, "LEFT", -3, 0)
+  r.name:SetPoint("LEFT", r.bar, "LEFT", 4, 0)
+  r.name:SetPoint("RIGHT", r.hp, "LEFT", -4, 0)
   for j, d in ipairs(r.dots) do
     d:ClearAllPoints()
-    d:SetPoint("LEFT", r.bar, "RIGHT", 3 + (j - 1) * (h + 2), 0)
+    d:SetPoint("LEFT", r.well, "RIGHT", 4 + (j - 1) * (h + 3), 0)
     d:SetSize(h, h)
-    pcall(d.time.SetFont, d.time, font, math.max(8, math.floor(h * 0.55)), "OUTLINE")
+    d.time:SetFontObject(UI.Font("bold", math.max(9, math.floor(h * 0.6)), "OUTLINE"))
   end
 end
 
 function L:Width()
   local db = B.db.list
-  local dots = db.dots and MAX_DOTS * (db.height + 2) or 0
-  return 4 + 5 + db.height + 3 + db.width + 3 + dots + 4
+  local dots = db.dots and MAX_DOTS * (db.height + 3) or 0
+  return 4 + db.height + 4 + db.width + 4 + dots + 4
+end
+
+---The list's height for n rows.
+function L:Height(n, extra)
+  return HANDLE_H + 4 + n * (B.db.list.height + 3) + 3 + (extra or 0)
 end
 
 function L:Build()
   if self.frame then return self.frame end
   local f = CreateFrame("Frame", SAVE_KEY, UIParent)
+  self:Dress(f)
+  f:Hide()
+  self.frame = f
+  return f
+end
+
+---The list's look, on the plain frame or the secure one. On top, a handle with the Bulwark mark and name, always
+---readable and the thing you drag. Below it the rows, on a stone panel framed in gold like every suite window, faded
+---by the Background setting (none at all by default, as Cursive players are used to).
+function L:Dress(f)
+  local C = UI.C
   f:SetSize(240, 60)
   f:SetPoint("LEFT", UIParent, "LEFT", 40, 120)
   f:SetFrameStrata("MEDIUM")
   f:SetClampedToScreen(true)
   f:SetMovable(true)
-  f:EnableMouse(true)
-  f:RegisterForDrag("LeftButton")
-  f:SetScript("OnDragStart", startDrag)
-  f:SetScript("OnDragStop", stopDrag)
-  f.bg = f:CreateTexture(nil, "BACKGROUND")
-  f.bg:SetAllPoints()
-  f.bg:SetColorTexture(0.03, 0.035, 0.06, 0.72)
-  f.edge = f:CreateTexture(nil, "BORDER")
-  f.edge:SetPoint("TOPLEFT")
-  f.edge:SetPoint("TOPRIGHT")
-  f.edge:SetHeight(2)
-  local accent = UI.Accent("bulwark")
-  f.edge:SetColorTexture(accent[1], accent[2], accent[3], 1)
-  f.mark = UI.Mark(f, "bulwark", 14)
-  f.mark:SetPoint("TOPLEFT", 5, -4)
-  f.title = UI.Text(f, "bold", 11, UI.AccentText("bulwark"))
-  f.title:SetPoint("LEFT", f.mark, "RIGHT", 4, 0)
+  f.panel = CreateFrame("Frame", nil, f)
+  f.panel:SetPoint("TOPLEFT", 0, -HANDLE_H)
+  f.panel:SetPoint("BOTTOMRIGHT")
+  f.panel:SetFrameLevel(math.max(0, f:GetFrameLevel()))
+  f.panel.box = UI.Box(f.panel, "BACKGROUND", -6)
+  f.panel.box:Set(C.frameGold, C.stone2, C.stone)
+  f.handle = CreateFrame("Frame", nil, f)
+  f.handle:SetPoint("TOPLEFT")
+  f.handle:SetHeight(HANDLE_H)
+  f.handle:EnableMouse(true)
+  f.handle:RegisterForDrag("LeftButton")
+  f.handle:SetScript("OnDragStart", startDrag)
+  f.handle:SetScript("OnDragStop", stopDrag)
+  f.handle:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine("Bulwark", 1, 1, 1)
+    GameTooltip:AddLine(B.db.list.locked and "Locked in place (settings)." or "Drag to move.", C.muted[1], C.muted[2], C.muted[3])
+    GameTooltip:Show()
+  end)
+  f.handle:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  f.mark = UI.Mark(f.handle, "bulwark", 24)
+  f.mark:SetPoint("LEFT", 0, 0)
+  f.title = UI.Text(f.handle, "title", 15, UI.AccentText("bulwark"))
+  f.title:SetPoint("LEFT", f.mark, "RIGHT", 5, 0)
   f.title:SetText("Bulwark")
-  f.count = UI.Text(f, "body", 11, UI.C.muted)
-  f.count:SetPoint("LEFT", f.title, "RIGHT", 6, 0)
-  f.hint = UI.Text(f, "body", 10, UI.C.muted)
-  f.hint:SetPoint("BOTTOMLEFT", 6, 4)
-  f:Hide()
+  UI.Glow(f.title)
+  f.count = UI.Text(f.handle, "body", 12, C.muted)
+  f.count:SetPoint("LEFT", f.title, "RIGHT", 7, -1)
+  UI.Glow(f.count)
+  f.hint = UI.Text(f, "body", 10, C.muted)
+  f.hint:SetPoint("BOTTOMLEFT", 6, 5)
+  UI.Glow(f.hint)
+  self:Fade(f)
   UI.RestorePosition(f, SAVE_KEY)
-  self.frame = f
-  return f
+end
+
+---The handle sized to its words, and the panel faded to the Background setting.
+function L:Fade(f)
+  local a = (B.db.list.background or 0) / 100
+  f.panel:SetAlpha(a)
+  f.panel:SetShown(a > 0)
+  f.handle:SetWidth(24 + 5 + (f.title:GetStringWidth() or 60) + 7 + (f.count:GetStringWidth() or 20) + 4)
 end
 
 function L:Row(i)
   local r = self.rows[i]
   if not r then
-    r = makeRow(self.frame)
+    r = self:MakeRow(self.frame)
     self.rows[i] = r
   end
   return r
@@ -439,7 +519,9 @@ local function paintDots(r, list)
       d.icon:SetTexture(e.icon)
       local left = e.expires - t0
       d.time:SetText(left >= 10 and ("%d"):format(left) or ("%.0f"):format(math.max(0, left)))
-      if left < 3 then d.time:SetTextColor(1, 0.3, 0.25) else d.time:SetTextColor(1, 1, 1) end
+      local c = left < 3 and UI.C.bad or UI.C.text
+      d.time:SetTextColor(c[1], c[2], c[3])
+      d.box:Set(left < 3 and UI.C.bad or UI.C.black, UI.C.black)
       d:Show()
     else
       d:Hide()
@@ -454,6 +536,18 @@ local function sortedDots(key)
   for name, d in pairs(t) do out[#out + 1] = { name = name, icon = d.icon, expires = d.expires } end
   table.sort(out, function(a, b) return a.expires < b.expires end)
   return out
+end
+
+---Fill a row from a live mob.
+function L:Paint(r, u, key)
+  r.unit = u
+  local okN, name = Core.Call(UnitName, u)
+  if not (okN and Core.SetSecret(r.name, "SetText", name)) then r.name:SetText("") end
+  paintHealth(r, u)
+  paintBar(r, u)
+  local okI, index = Core.Call(GetRaidTargetIndex, u)
+  if okI and index ~= nil and pcall(SetRaidTargetIconTexture, r.mark, index) then r.mark:Show() else r.mark:Hide() end
+  paintDots(r, sortedDots(key or keyOf(u)))
 end
 
 -- sample mobs for the preview, so the window can be placed and sized out of combat
@@ -471,6 +565,13 @@ function L:Refresh()
     return
   end
   self:Expire()
+  local S = self.Secure
+  if S and S:Active() and not self.preview then
+    if self.frame then self.frame:Hide() end
+    S:Refresh()
+    return
+  end
+  if S then S:Hide() end
   local f = self:Build()
   local mobs
   if self.preview then
@@ -485,14 +586,15 @@ function L:Refresh()
     return
   end
   local width = self:Width()
-  f:SetSize(width, 20 + #mobs * (db.height + 2) + (self.preview and 16 or 2))
+  f:SetSize(width, self:Height(#mobs, self.preview and 16 or 0))
   f.count:SetText(self.preview and "preview" or tostring(#mobs))
   f.hint:SetText(self.preview and "Drag to move. /bulwark list to close." or "")
   f.hint:SetShown(self.preview)
+  self:Fade(f)
   for i, m in ipairs(mobs) do
     local r = self:Row(i)
     if r.laidOut ~= self.gen then self:Layout(r, i) r.laidOut = self.gen end
-    r.targetEdge:SetShown(m.target and true or false)
+    r:SetTarget(m.target and true or false)
     if m.sample then
       local s = m.sample
       r.unit = nil
@@ -508,15 +610,7 @@ function L:Refresh()
       for j, d in ipairs(s.dots) do list[j] = { icon = d[1], expires = now() + d[2] } end
       paintDots(r, list)
     else
-      local u = m.unit
-      r.unit = u
-      local okN, name = Core.Call(UnitName, u)
-      if not (okN and Core.SetSecret(r.name, "SetText", name)) then r.name:SetText("") end
-      paintHealth(r, u)
-      paintBar(r, u)
-      local okI, index = Core.Call(GetRaidTargetIndex, u)
-      if okI and index ~= nil and pcall(SetRaidTargetIconTexture, r.mark, index) then r.mark:Show() else r.mark:Hide() end
-      paintDots(r, sortedDots(m.key))
+      self:Paint(r, m.unit, m.key)
     end
     r:Show()
   end
@@ -531,6 +625,7 @@ end
 function L:Preview(on)
   if on == nil then on = not self.preview end
   self.preview = on
+  if self.Secure then self.Secure:Apply() end
   if on and not B.db.list.enabled then B:Print("The mob list is turned off in settings; this is how it would look.") end
   self:Refresh()
 end
@@ -538,15 +633,20 @@ end
 ---Settings changed: lay the rows out again.
 function L:Changed()
   self.gen = self.gen + 1
+  if self.Secure then self.Secure:Apply() end
   if self.frame then self:Refresh() end
 end
 
 function L:ResetPosition()
+  if InCombatLockdown() then return end
   local f = self:Build()
   f:ClearAllPoints()
   f:SetPoint("LEFT", UIParent, "LEFT", 40, 120)
   UI.SavePosition(f, SAVE_KEY)
+  if self.Secure and self.Secure.header then UI.RestorePosition(self.Secure.header, SAVE_KEY) end
 end
+
+L.keyOf, L.MARK_ORDER, L.SAVE_KEY = keyOf, MARK_ORDER, SAVE_KEY
 
 -------------------------------------------------------------------------------------------
 -- Events
