@@ -10,13 +10,15 @@ local COLORS = {
   { "other", "On someone else", "Someone who isn't a tank. Not tanking, this is the colour for you." },
   { "tank", "On another tank", "Their role is Tank, they're the main tank, they're in a bear form, Defensive Stance or Righteous Fury, or it's your pet." },
   { "none", "On nobody", "In combat, but not on anyone." },
+  { "warn", "Threat % getting close", "The number, from 20 points below the flash line." },
+  { "danger", "Threat % at the flash line", "The number, once it reaches the flash line." },
 }
 
 local function pick(key, after)
   local picker = rawget(_G, "ColorPickerFrame")
   if not picker then return end
   local before = { unpack(B.db.colors[key]) }
-  local function set(c) B.db.colors[key] = c B:Changed() after() end
+  local function set(c) B.db.colors[key] = c B.db.scheme = "custom" B:Changed() after() end
   local function apply() local r, g, b = picker:GetColorRGB() set({ r, g, b }) end
   local function cancel() set(before) end
   if picker.SetupColorPickerAndShow then
@@ -63,19 +65,54 @@ Core:OnLogin(function()
   list:Toggle("Dark disc behind it", "Keeps the mark readable against bright spell effects and ground.", mark("backdrop"))
 
   list:Header("Colours")
+  local schemes = {}
+  for _, sc in ipairs(B.SCHEMES) do schemes[#schemes + 1] = { sc.key, sc.label } end
+  schemes[#schemes + 1] = { "custom", "Your own" }
+  list:Dropdown("Colour scheme", "Ready-made colours, including colour-blind friendly ones. Changing any colour below makes it your own.",
+    schemes, function() return B.db.scheme end,
+    function(v) if v ~= "custom" then B:ApplyScheme(v) list:Refresh() end end)
+  -- each colour: a framed swatch you click to change it, and Reset beside it only once it differs from the scheme
+  local C = UI.C
+  local function same(a, b) return math.abs(a[1] - b[1]) < 0.005 and math.abs(a[2] - b[2]) < 0.005 and math.abs(a[3] - b[3]) < 0.005 end
+  local function schemeColor(key)
+    local sc = B:Scheme(B.db.scheme) or B:Scheme("default")
+    return sc.colors[key]
+  end
   for _, def in ipairs(COLORS) do
     local key = def[1]
-    local r
-    r = list:Buttons(def[2], def[3], {
-      { "Change", function() pick(key, function() if r.refresh then r.refresh() end end) end },
-      { "Default", function() B.db.colors[key] = { unpack(B.DEFAULTS.colors[key]) } B:Changed() r.refresh() end },
+    local r = list:Buttons(def[2], def[3], {
+      { "Reset", function()
+        local c = schemeColor(key)
+        B.db.colors[key] = { c[1], c[2], c[3] }
+        B:Changed()
+        list:Refresh()
+      end },
     })
-    local swatch = r.control:CreateTexture(nil, "ARTWORK")
-    swatch:SetSize(22, 14)
-    swatch:SetPoint("LEFT", r.control, "LEFT", 0, 0)
+    local holder = r.control
+    local swatch = CreateFrame("Button", nil, holder)
+    swatch:SetSize(52, 24)
+    swatch:SetPoint("RIGHT", holder, "RIGHT", 0, 0)
+    swatch.box = UI.Box(swatch, "BACKGROUND", 0)
+    swatch.fill = swatch:CreateTexture(nil, "ARTWORK")
+    swatch.fill:SetPoint("TOPLEFT", 3, -3)
+    swatch.fill:SetPoint("BOTTOMRIGHT", -3, 3)
+    local function paint(hover) swatch.box:Set(hover and C.goldSoft or C.frameGold, C.frameDark) end
+    paint(false)
+    swatch:SetScript("OnEnter", function(self)
+      paint(true)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:AddLine("Click to change", 1, 1, 1)
+      GameTooltip:Show()
+    end)
+    swatch:SetScript("OnLeave", function() paint(false) GameTooltip:Hide() end)
+    swatch:SetScript("OnClick", function() pick(key, function() list:Refresh() end) end)
+    local reset = holder.button1
+    reset:ClearAllPoints()
+    reset:SetPoint("RIGHT", swatch, "LEFT", -12, 0)
     r.refresh = function()
       local c = B.db.colors[key]
-      swatch:SetColorTexture(c[1], c[2], c[3], 1)
+      swatch.fill:SetColorTexture(c[1], c[2], c[3], 1)
+      reset:SetShown(not same(c, schemeColor(key)))
     end
   end
   list:Buttons("Try it", "A training dummy or any mob shows the colours; /bulwark status says which mode you're in.", {
@@ -84,5 +121,6 @@ Core:OnLogin(function()
     function() return Core.MinimapButton:IsShown("bulwark") end, function(on) Core.MinimapButton:SetShown("bulwark", on) end)
 
   page:SetScript("OnShow", function() list:Refresh() end)
+  B.settingsPage = page
   B.settingsCategory = Core:AddSettingsPage(page, "Bulwark")
 end)

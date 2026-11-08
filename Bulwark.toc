@@ -3,7 +3,7 @@
 ## Category: NorgannonDB
 ## Notes: Combat and aggro on enemy nameplates: health bars coloured by who the mob is on, a flash before you lose it, threat %, and raid marks you can see in a crowd. Powered by NorgannonDB. /bulwark
 ## Author: Maro
-## Version: 0.3.0
+## Version: 0.4.0
 ## X-License: All Rights Reserved
 ## Dependencies: NorgannonDB, NorgannonDB_Core
 ## SavedVariables: BulwarkDB

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0, 2026-11-07
+
+- **Colour schemes:** Default, red-green colour blind (protanopia, deuteranopia), blue-yellow colour blind (tritanopia)
+  and high contrast. The colour-blind ones use the Okabe-Ito palette. Changing any colour yourself makes the scheme
+  "Your own".
+- Cleaner colour rows: the colour is a framed swatch you click to change it, with room around it. Reset sits beside it
+  and only shows once that colour differs from the scheme.
+- The threat % colours (getting close, at the flash line) can be changed too, and follow the scheme.
+
 ## 0.3.0, 2026-11-07
 
 - **Threat % on each plate**, in combat: tanking a mob, how close the next person is to pulling it off you ("72%");

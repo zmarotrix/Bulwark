@@ -13,7 +13,7 @@ local IsSecret = Core.IsSecret
 local Threat = { texts = {} }   -- plate frame -> our font string's holder
 B.Threat = Threat
 
-local WHITE, YELLOW, RED = { 0.95, 0.95, 0.95 }, { 1, 0.82, 0.2 }, { 1, 0.35, 0.25 }
+local WHITE = { 0.95, 0.95, 0.95 }
 
 ---number (may be secret), kind ("lead" | "mine"), or nil when there's nothing to show.
 function Threat:Number(plate)
@@ -33,12 +33,12 @@ function Threat:Number(plate)
   return pct, "mine"
 end
 
----The colour for a plain number: white while it's safe, yellow getting close, red at the flash line.
+---The colour for a plain number: white while it's safe, the warn colour getting close, the danger colour at the flash line (both in settings).
 function Threat:ColorFor(n, kind)
   if kind == "mine" and B:TankMode() then return WHITE end   -- a tank wants this one high
   local at = B.db.flashAt
-  if n >= at then return RED end
-  if n >= at - 20 then return YELLOW end
+  if n >= at then return B.db.colors.danger end
+  if n >= at - 20 then return B.db.colors.warn end
   return WHITE
 end
 

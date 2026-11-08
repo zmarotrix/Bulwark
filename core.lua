@@ -50,13 +50,59 @@ B.DEFAULTS = {
     where = "above",      -- "above" the name, or "left" of the bar where Blizzard puts its own
     backdrop = true,      -- a soft dark disc behind the mark, so it stands out on a busy screen
   },
+  scheme = "default",      -- a key of B.SCHEMES, or "custom" once you change a colour yourself
   colors = {
     me = { 0.2, 0.85, 0.25 },
     other = { 0.92, 0.15, 0.12 },
     tank = { 0.2, 0.8, 0.95 },
     none = { 0.55, 0.55, 0.55 },
+    warn = { 1, 0.82, 0.2 },      -- threat % getting close
+    danger = { 1, 0.35, 0.25 },   -- threat % at the flash line
   },
 }
+
+-- Ready-made colour schemes. The colour-blind ones use the Okabe-Ito palette, chosen so the pairs that matter
+-- (on you / on someone else, getting close / at the line) differ in brightness as well as hue.
+B.SCHEMES = {
+  { key = "default", label = "Default", colors = B.DEFAULTS.colors },
+  { key = "redgreen", label = "Red-green colour blind (protanopia, deuteranopia)", colors = {
+    me = { 0.34, 0.71, 0.91 },      -- sky blue
+    other = { 0.84, 0.37, 0 },      -- vermillion
+    tank = { 0.94, 0.89, 0.26 },    -- yellow
+    none = { 0.55, 0.55, 0.55 },
+    warn = { 0.94, 0.89, 0.26 },
+    danger = { 0.84, 0.37, 0 },
+  } },
+  { key = "blueyellow", label = "Blue-yellow colour blind (tritanopia)", colors = {
+    me = { 0, 0.62, 0.45 },         -- bluish green
+    other = { 0.9, 0.12, 0.2 },     -- red
+    tank = { 0.8, 0.47, 0.65 },     -- reddish purple
+    none = { 0.55, 0.55, 0.55 },
+    warn = { 0.8, 0.47, 0.65 },
+    danger = { 0.9, 0.12, 0.2 },
+  } },
+  { key = "contrast", label = "High contrast", colors = {
+    me = { 0.1, 1, 0.1 },
+    other = { 1, 0, 0 },
+    tank = { 0, 0.55, 1 },
+    none = { 0.3, 0.3, 0.3 },
+    warn = { 1, 1, 0 },
+    danger = { 1, 0, 0 },
+  } },
+}
+
+function B:Scheme(key)
+  for _, s in ipairs(self.SCHEMES) do if s.key == key then return s end end
+end
+
+---Put a scheme's colours in place.
+function B:ApplyScheme(key)
+  local s = self:Scheme(key)
+  if not s then return end
+  for k, c in pairs(s.colors) do self.db.colors[k] = { c[1], c[2], c[3] } end
+  self.db.scheme = key
+  self:Changed()
+end
 
 local function fill(t, defaults)
   for k, v in pairs(defaults) do
