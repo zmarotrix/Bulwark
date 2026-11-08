@@ -13,7 +13,7 @@ Powered by NorgannonDB.
 
 **The mob list**, in the spirit of Cursive: a small window with every enemy in the fight, its health, who it's on (the
 colours above), and your own DoTs and debuffs on it with the seconds left. Raid marks come first, skull at the top, and
-your target has a gold edge. Click a row to target that mob, in combat too. The game hides auras from add-ons in combat, so the timers come from your own casts on
+your target has a gold edge. Click a row to target that mob, in combat too. The Bulwark handle above the rows always shows while the list is on (dimmed when it's empty), and the list grows downward from it. The game hides auras from add-ons in combat, so the timers come from your own casts on
 your target, and are corrected by what Bulwark reads out of combat.
 
 `/bulwark` opens the settings. Also: `on`, `off`, `tank`, `dps`, `auto`, `list` (preview the mob list), `status`.

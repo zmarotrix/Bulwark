@@ -67,7 +67,7 @@ Core:OnLogin(function()
   list:Header("Mob list")
   local function ml(key) return function() return B.db.list[key] end, function(v) B.db.list[key] = v B:Changed() end end
   list:Toggle("Mob list", "A small window with every mob in the fight: its health, who it's on (the plate colours above), and your own DoTs and debuffs on it with the seconds left. Raid marks first, skull at the top; your target has a white edge.", ml("enabled"))
-  list:Toggle("Only mobs in combat", "Off, it lists every enemy with a nameplate near you. A mob carrying one of your debuffs is always listed.", ml("combatOnly"))
+  list:Toggle("Only mobs in combat", "Off, it lists every enemy with a nameplate near you. Either way the Bulwark handle stays up, dimmed while the list is empty, so you can move it.", ml("combatOnly"))
   list:Toggle("Your DoTs and debuffs", "Timed from your casts on your target, since the game hides auras from add-ons in combat. A resisted or immune cast still shows a timer.", ml("dots"))
   list:Slider("Most mobs shown", "Your target always keeps a row.", 3, 20, 1, function() return B.db.list.rows end, function(v) B.db.list.rows = v B:Changed() end, "%.0f", 1)
   list:Slider("Bar width", nil, 90, 260, 10, function() return B.db.list.width end, function(v) B.db.list.width = v B:Changed() end, "%.0f px", 1)

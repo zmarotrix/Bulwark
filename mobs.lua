@@ -9,7 +9,9 @@
 --     A resist or immune still shows a timer: in combat nothing tells us it missed.
 --   * Health is always secret: the bar and the % get it straight from the client; nothing here reads it.
 --   * Cursive sees every mob by GUID through nampower. Here a mob is on the list while it has a nameplate.
---   * Rows don't target on click: that takes secure buttons, which can't be re-pointed at another mob in combat.
+--   * Clicking a row targets the mob: clicks.lua, with secure buttons the game lays out itself in combat.
+--   * The handle (mark and name) always shows while the list is on, so you can move it; with no mobs it's dimmed and
+--     the rows are gone. The list hangs from its top-left corner, so rows come and go below a title that stays put.
 
 local Core = NorgannonCore
 local B = Bulwark
@@ -255,10 +257,33 @@ local function curve()
   return percentCurve or nil
 end
 
+-- where the list goes until you move it: its top-left corner left of the screen's middle
+local function defaultPoint(f)
+  f:ClearAllPoints()
+  f:SetPoint("TOPLEFT", UIParent, "LEFT", 40, 150)
+end
+
+---Anchor f by its top-left corner, where it sits now. StopMovingOrSizing anchors by whichever point is nearest, so
+---without this a list near the bottom of the screen would grow upward and push its title around.
+local function pinTop(f)
+  local left, top = f:GetLeft(), f:GetTop()
+  if not (left and top) then return end
+  local s = (f:GetEffectiveScale() or 1) / (UIParent:GetEffectiveScale() or 1)
+  f:ClearAllPoints()
+  f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left * s, top * s)
+end
+
+---Put f where it was saved (positions saved before 0.7.1 by another corner are turned into the top-left one).
+local function place(f)
+  defaultPoint(f)
+  UI.RestorePosition(f, SAVE_KEY)
+  pinTop(f)
+end
+
 -- the frame being shown: the secure one while it's in use, else the plain one
 local function mover()
   local S = L.Secure
-  if S and S.header and S.header:IsShown() then return S.header end
+  if S and S.header and S.driver ~= "hide" and S.header:IsShown() then return S.header end
   return L.frame
 end
 local function startDrag()
@@ -270,9 +295,10 @@ local function stopDrag()
   if not (f and f.moving) then return end
   f.moving = nil
   f:StopMovingOrSizing()
+  pinTop(f)
   UI.SavePosition(f, SAVE_KEY)
   for _, other in ipairs({ L.frame, L.Secure and L.Secure.header }) do
-    if other and other ~= f and not InCombatLockdown() then UI.RestorePosition(other, SAVE_KEY) end
+    if other and other ~= f and not InCombatLockdown() then place(other) end
   end
 end
 
@@ -417,7 +443,7 @@ end
 function L:Dress(f)
   local C = UI.C
   f:SetSize(240, 60)
-  f:SetPoint("LEFT", UIParent, "LEFT", 40, 120)
+  defaultPoint(f)
   f:SetFrameStrata("MEDIUM")
   f:SetClampedToScreen(true)
   f:SetMovable(true)
@@ -454,14 +480,16 @@ function L:Dress(f)
   f.hint:SetPoint("BOTTOMLEFT", 6, 5)
   UI.Glow(f.hint)
   self:Fade(f)
-  UI.RestorePosition(f, SAVE_KEY)
+  place(f)
 end
 
----The handle sized to its words, and the panel faded to the Background setting.
-function L:Fade(f)
+---The handle sized to its words, dimmed while there are no mobs (n == 0), and the panel faded to the Background
+---setting (none behind an empty list).
+function L:Fade(f, n)
   local a = (B.db.list.background or 0) / 100
   f.panel:SetAlpha(a)
-  f.panel:SetShown(a > 0)
+  f.panel:SetShown(a > 0 and n ~= 0)
+  f.handle:SetAlpha(n == 0 and 0.6 or 1)
   f.handle:SetWidth(24 + 5 + (f.title:GetStringWidth() or 60) + 7 + (f.count:GetStringWidth() or 20) + 4)
 end
 
@@ -580,9 +608,13 @@ function L:Refresh()
   else
     mobs = self:Mobs()
   end
-  if #mobs == 0 then
+  if #mobs == 0 then   -- just the handle, so the list can be moved and you know it's there
     for _, r in ipairs(self.rows) do r.unit = nil r:Hide() end
-    f:Hide()
+    f:SetSize(self:Width(), HANDLE_H)
+    f.count:SetText("")
+    f.hint:Hide()
+    self:Fade(f, 0)
+    f:Show()
     return
   end
   local width = self:Width()
@@ -590,7 +622,7 @@ function L:Refresh()
   f.count:SetText(self.preview and "preview" or tostring(#mobs))
   f.hint:SetText(self.preview and "Drag to move. /bulwark list to close." or "")
   f.hint:SetShown(self.preview)
-  self:Fade(f)
+  self:Fade(f, #mobs)
   for i, m in ipairs(mobs) do
     local r = self:Row(i)
     if r.laidOut ~= self.gen then self:Layout(r, i) r.laidOut = self.gen end
@@ -640,10 +672,10 @@ end
 function L:ResetPosition()
   if InCombatLockdown() then return end
   local f = self:Build()
-  f:ClearAllPoints()
-  f:SetPoint("LEFT", UIParent, "LEFT", 40, 120)
+  defaultPoint(f)
+  pinTop(f)
   UI.SavePosition(f, SAVE_KEY)
-  if self.Secure and self.Secure.header then UI.RestorePosition(self.Secure.header, SAVE_KEY) end
+  if self.Secure and self.Secure.header then place(self.Secure.header) end
 end
 
 L.keyOf, L.MARK_ORDER, L.SAVE_KEY = keyOf, MARK_ORDER, SAVE_KEY

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1, 2026-11-07
+
+- The list's handle (the Bulwark mark and name) now shows all the time while the list is on, dimmed when there are no
+  mobs, so you can move it whenever you like. "Only mobs in combat" now empties the rows instead of hiding the list.
+- The list hangs from its top-left corner wherever you drop it, so rows come and go below a title that stays put. A
+  position saved by 0.7.0 is turned into the top-left one.
+
 ## 0.7.0, 2026-11-07
 
 - **Click a row to target that mob, in combat too.** The rows are the game's own secure unit buttons, and the game lays

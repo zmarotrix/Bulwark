@@ -10,6 +10,8 @@
 -- Add-on code only paints the rows (name, health, colour, DoTs), which sit on the buttons as plain child frames.
 -- Trade-offs against the plain list, which "Click a row to target it" off brings back: in combat a mob that isn't in
 -- the fight yet still has a row (dimmed), marks put on mid-fight don't reorder, and the target doesn't jump the queue.
+-- The list itself always shows while it's on (the handle, to move it); "Only mobs in combat" empties it out of combat
+-- through a second state driver ("fight") that re-runs the layout as combat starts and ends.
 -- Restricted code can't be run by the harness's stub client the way the game runs it; bulwark_test.py runs the snippet
 -- in a stand-in environment with the same functions, which proves its logic, not the game's acceptance of it.
 
@@ -55,6 +57,10 @@ S.LAYOUT = [=[
     if not used[ok[i]] then rN = rN + 1 ranked[rN] = ok[i] used[ok[i]] = true end
   end
 
+  -- only mobs in combat: no rows until you're in the fight (the "fight" driver re-runs this as it starts and ends)
+  local fight = self:GetAttribute("state-fight")
+  if self:GetAttribute("combatonly") and fight ~= "1" and fight ~= 1 then rN = 0 end
+
   local h = self:GetAttribute("rowh") or 18
   local top = self:GetAttribute("top") or 30
   local max = self:GetAttribute("maxrows") or 8
@@ -77,7 +83,7 @@ S.LAYOUT = [=[
   end
   local shownN = rN
   if shownN > max then shownN = max end
-  self:SetHeight(top + shownN * (h + 3) + 3)
+  if shownN > 0 then self:SetHeight(top + shownN * (h + 3) + 3) else self:SetHeight(top - 4) end
   self:SetAttribute("count", shownN)
 ]=]
 
@@ -98,6 +104,7 @@ function S:Build()
     local h = CreateFrame("Frame", "BulwarkMobHeader", UIParent, "SecureHandlerStateTemplate")
     L:Dress(h)
     h:SetAttribute("layout", S.LAYOUT)
+    h:SetAttribute("_onstate-fight", RELAYOUT)
     for i = 1, MAX_UNITS do
       local unit = "nameplate" .. i
       local b = CreateFrame("Button", "BulwarkMobButton" .. i, h, "SecureUnitButtonTemplate")
@@ -128,6 +135,7 @@ function S:Build()
       RegisterUnitWatch(b)
       S.buttons[i] = b
     end
+    RegisterStateDriver(h, "fight", "[combat] 1; 0")
     S.header = h
   end)
   if not ok then
@@ -151,19 +159,20 @@ function S:Apply()
   h:SetAttribute("rowh", db.height)
   h:SetAttribute("top", L.HANDLE_H + 4)
   h:SetAttribute("maxrows", db.rows)
+  h:SetAttribute("combatonly", db.combatOnly and true or false)
   for _, b in ipairs(self.buttons) do
     b:SetSize(L:Width() - 8, db.height)
     L:LayoutParts(b.row)
   end
   local show = "hide"
-  if self:Active() and not L.preview then show = db.combatOnly and "[combat] show; hide" or "show" end
+  if self:Active() and not L.preview then show = "show" end
   if self.driver ~= show then
     UnregisterStateDriver(h, "visibility")
     RegisterStateDriver(h, "visibility", show)
     self.driver = show
   end
   self:SetPref(true)
-  L:Fade(h)
+  L:Fade(h, h:GetAttribute("count") or 0)
 end
 
 ---Out of combat: tell the layout snippet which mobs go first next fight (marked ones, skull first).
@@ -207,9 +216,10 @@ function S:Refresh()
     end
   end
   local n = h:GetAttribute("count")
-  h.count:SetText(type(n) == "number" and tostring(n) or "")
+  if type(n) ~= "number" then n = 0 end
+  h.count:SetText(n > 0 and tostring(n) or "")
   h.hint:Hide()
-  L:Fade(h)
+  L:Fade(h, n)
 end
 
 Core:OnLogin(function()
