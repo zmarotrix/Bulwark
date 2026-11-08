@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2, 2026-11-07
+
+- The mob list tracks **Lacerate** (15 seconds). Debuffs that stack (Lacerate, Sunder Armor) count up with each cast, to
+  5, shown in gold in the corner of the icon; a stack that ran out starts again at 1. Out of combat the real count is
+  read from the mob.
+
 ## 0.7.1, 2026-11-07
 
 - The list's handle (the Bulwark mark and name) now shows all the time while the list is on, dimmed when there are no

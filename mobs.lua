@@ -37,7 +37,7 @@ L.DOTS = {
   ["Shackle Undead"] = 50, ["Hex of Weakness"] = 120, ["Mind Control"] = 60,
   -- Druid
   ["Moonfire"] = 12, ["Insect Swarm"] = 12, ["Faerie Fire"] = 40, ["Faerie Fire (Feral)"] = 40, ["Rake"] = 9,
-  ["Rip"] = 12, ["Hibernate"] = 40, ["Entangling Roots"] = 27,
+  ["Rip"] = 12, ["Hibernate"] = 40, ["Entangling Roots"] = 27, ["Lacerate"] = 15,
   -- Hunter
   ["Serpent Sting"] = 15, ["Hunter's Mark"] = 120, ["Viper Sting"] = 8, ["Scorpid Sting"] = 20,
   ["Wyvern Sting"] = 12, ["Concussive Shot"] = 4, ["Wing Clip"] = 10,
@@ -67,6 +67,9 @@ L.RANKS = {
   [6770] = 25, [2070] = 35,                                  -- Sap 1-2
   [853] = 3, [5588] = 4, [5589] = 5,                         -- Hammer of Justice 1-3
 }
+
+-- debuffs that stack: each cast adds one, up to this many, and refreshes the timer
+L.STACKS = { ["Lacerate"] = 5, ["Sunder Armor"] = 5 }
 
 local function now() return GetTime() end
 
@@ -140,14 +143,21 @@ function L:OnSucceeded(unit, castGUID, id)
   local name = spellName(id)
   local seconds = self:Duration(id, name)
   if not seconds then return end
-  self:Apply(where.key, name, spellIcon(id), seconds)
+  local stacks
+  local max = self.STACKS[name]
+  if max then   -- one more on a stack still running, else a fresh one
+    local t = self.dots[where.key]
+    local old = t and t[name]
+    stacks = math.min(max, (old and old.expires > now() and old.stacks or 0) + 1)
+  end
+  self:Apply(where.key, name, spellIcon(id), seconds, nil, stacks)
 end
 
----Put (or refresh) one of your debuffs on a mob.
-function L:Apply(key, name, icon, seconds, expires)
+---Put (or refresh) one of your debuffs on a mob. stacks: how many, for those that stack.
+function L:Apply(key, name, icon, seconds, expires, stacks)
   local t = self.dots[key]
   if not t then t = {} self.dots[key] = t end
-  t[name] = { icon = icon, duration = seconds, expires = expires or (now() + seconds) }
+  t[name] = { icon = icon, duration = seconds, expires = expires or (now() + seconds), stacks = stacks }
   self.dirty = true
 end
 
@@ -166,7 +176,9 @@ function L:Read(unit)
     if type(name) == "string" and self.DOTS[name] and type(dur) == "number" and dur > 0 then
       found[name] = true
       B.db.list.learned[name] = dur
-      self:Apply(keyOf(unit), name, a.icon or 134400, dur, exp)
+      local n = a.applications
+      if IsSecret(n) or type(n) ~= "number" or n < 2 then n = self.STACKS[name] and 1 or nil end
+      self:Apply(keyOf(unit), name, a.icon or 134400, dur, exp, n)
     end
   end
   local t = self.dots[keyOf(unit)]
@@ -355,6 +367,8 @@ function L:MakeRow(f, passive)
     d.shade:SetColorTexture(0, 0, 0, 0.35)
     d.time = d:CreateFontString(nil, "OVERLAY")
     d.time:SetPoint("CENTER", 0, 0)
+    d.stack = d:CreateFontString(nil, "OVERLAY")
+    d.stack:SetPoint("BOTTOMRIGHT", 1, -1)
     d:Hide()
     r.dots[i] = d
   end
@@ -414,6 +428,8 @@ function L:LayoutParts(r)
     d:SetPoint("LEFT", r.well, "RIGHT", 4 + (j - 1) * (h + 3), 0)
     d:SetSize(h, h)
     d.time:SetFontObject(UI.Font("bold", math.max(9, math.floor(h * 0.6)), "OUTLINE"))
+    d.stack:SetFontObject(UI.Font("bold", math.max(8, math.floor(h * 0.45)), "OUTLINE"))
+    d.stack:SetTextColor(UI.C.gold[1], UI.C.gold[2], UI.C.gold[3])
   end
 end
 
@@ -550,6 +566,7 @@ local function paintDots(r, list)
       local c = left < 3 and UI.C.bad or UI.C.text
       d.time:SetTextColor(c[1], c[2], c[3])
       d.box:Set(left < 3 and UI.C.bad or UI.C.black, UI.C.black)
+      d.stack:SetText(e.stacks and e.stacks > 1 and tostring(e.stacks) or "")
       d:Show()
     else
       d:Hide()
@@ -561,7 +578,7 @@ local function sortedDots(key)
   local t = L.dots[key]
   local out = {}
   if not t then return out end
-  for name, d in pairs(t) do out[#out + 1] = { name = name, icon = d.icon, expires = d.expires } end
+  for name, d in pairs(t) do out[#out + 1] = { name = name, icon = d.icon, expires = d.expires, stacks = d.stacks } end
   table.sort(out, function(a, b) return a.expires < b.expires end)
   return out
 end
@@ -583,7 +600,7 @@ local SAMPLE = {
   { name = "Defias Pillager", pct = 82, mark = 8, who = "me", target = true, dots = { { 135817, 14 }, { 136139, 6 } } },
   { name = "Defias Conjurer", pct = 47, mark = 7, who = "tank", dots = { { 136118, 2 } } },
   { name = "Defias Overseer", pct = 100, who = "other", flash = true, dots = {} },
-  { name = "Defias Watchman", pct = 23, who = "none", dots = { { 136207, 21 }, { 135817, 9 }, { 136139, 4 } } },
+  { name = "Defias Watchman", pct = 23, who = "none", dots = { { 136207, 21 }, { 132131, 9, 3 }, { 136139, 4 } } },
 }
 
 function L:Refresh()
@@ -639,7 +656,7 @@ function L:Refresh()
       r.warn:SetShown(s.flash and true or false)
       if s.mark then SetRaidTargetIconTexture(r.mark, s.mark) r.mark:Show() else r.mark:Hide() end
       local list = {}
-      for j, d in ipairs(s.dots) do list[j] = { icon = d[1], expires = now() + d[2] } end
+      for j, d in ipairs(s.dots) do list[j] = { icon = d[1], expires = now() + d[2], stacks = d[3] } end
       paintDots(r, list)
     else
       self:Paint(r, m.unit, m.key)
