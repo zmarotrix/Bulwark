@@ -1,0 +1,12 @@
+## Interface: 16001
+## Title: |cff7fb2ffBulwark|r
+## Category: NorgannonDB
+## Notes: Tank nameplates: each enemy's health bar is coloured by who it's on, and flashes when you're about to lose it. Powered by NorgannonDB. /bulwark
+## Author: Maro
+## Version: 0.1.0
+## X-License: All Rights Reserved
+## Dependencies: NorgannonDB, NorgannonDB_Core
+## SavedVariables: BulwarkDB
+
+core.lua
+settings.lua
