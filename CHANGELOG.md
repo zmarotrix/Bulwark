@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0, 2026-11-07
+
+- Built on NorgannonDB Core 1.20's `Core:NewAddon`: the same commands, settings and minimap row, with a quarter of the
+  setup code.
+- The minimap row and the add-on menu now work like every suite add-on's: a click opens settings, and right-click does
+  too. Turning Bulwark on or off moved to **Shift-click**, so a habit from another add-on can't switch it off.
+- The "Show the minimap button" setting is gone: NorgannonDB > Minimap pins any add-on.
+- `/bulwark help` lists every command.
+
 ## 0.4.0, 2026-11-07
 
 - **Colour schemes:** Default, red-green colour blind (protanopia, deuteranopia), blue-yellow colour blind (tritanopia)

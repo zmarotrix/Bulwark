@@ -17,21 +17,14 @@
 local ADDON = ...
 local Core = NorgannonCore
 
-Bulwark = Bulwark or {}
-local B = Bulwark
-B.addonName = ADDON or "Bulwark"
-
-if not (Core and Core:Require(1, 17)) then
-  B.disabled = true
-  C_Timer.After(5, function()
-    print("|cff3d66e8Bulwark|r needs NorgannonDB Core 1.17 or newer; it is turned off.")
-  end)
+if not (Core and Core.NewAddon) then
+  Bulwark = { disabled = true }
+  print("Bulwark needs NorgannonDB Core 1.20 or newer; it is turned off.")
   return
 end
 
-B.PREFIX = "|cff3d66e8Bulwark|r"
-B.ACCENT = { 0.239, 0.4, 0.91 }   -- dark blue, #3d66e8 (brand/README.md)
-function B:Print(msg) Core:Print(msg, self.PREFIX) end
+Bulwark = Bulwark or {}
+local B = Bulwark
 local IsSecret = Core.IsSecret
 
 B.DEFAULTS = {
@@ -91,6 +84,48 @@ B.SCHEMES = {
   } },
 }
 
+local MODES = { auto = "Auto", tank = "Tank", dps = "Not tanking" }
+
+local function setEnabled(on)
+  B.db.enabled = on
+  B:Changed()
+  B:Print(on and "Colouring nameplates." or "Off: Blizzard's colours are back.")
+end
+
+local function setMode(mode)
+  return function()
+    B.db.mode = mode
+    B:Changed()
+    B:Print("Mode: " .. MODES[mode] .. ".")
+  end
+end
+
+-- The suite's plumbing: version check, BulwarkDB with its defaults, the slash command, the minimap row and the add-on
+-- menu. Bulwark has no window: a click opens its settings, and Shift-click turns it on or off.
+Core:NewAddon("bulwark", {
+  folder = ADDON, api = { 1, 20 },
+  db = "BulwarkDB", defaults = B.DEFAULTS,
+  slash = { "/bulwark" },
+  commands = {
+    on = { function() setEnabled(true) end, "colour enemy nameplates" },
+    off = { function() setEnabled(false) end, "give Blizzard's colours back" },
+    tank = { setMode("tank"), "always tank mode" },
+    dps = { setMode("dps"), "never tank mode" },
+    auto = { setMode("auto"), "tank mode when your role, form or stance says so" },
+    status = { function()
+      B:Print(("%s. Mode: %s (%s now). Flash: %s at %d%%.")
+        :format(B.db.enabled and "On" or "Off", MODES[B.db.mode] or B.db.mode, B:TankMode() and "tanking" or "not tanking",
+          B.db.flash and "on" or "off", B.db.flashAt))
+    end, "what Bulwark is doing" },
+  },
+  minimap = {
+    onShiftClick = function() setEnabled(not B.db.enabled) end,
+    shiftHint = "on or off",
+    status = function() return B.db and (B.db.enabled and "Colouring enemy nameplates" or "Off") end,
+  },
+})
+if B.disabled then return end
+
 function B:Scheme(key)
   for _, s in ipairs(self.SCHEMES) do if s.key == key then return s end end
 end
@@ -104,40 +139,18 @@ function B:ApplyScheme(key)
   self:Changed()
 end
 
-local function fill(t, defaults)
-  for k, v in pairs(defaults) do
-    if t[k] == nil then
-      if type(v) == "table" then t[k] = {} fill(t[k], v) else t[k] = v end
-    elseif type(v) == "table" and type(t[k]) == "table" then
-      fill(t[k], v)
-    end
-  end
-end
-
-function B:InitDB()
-  local saved = rawget(_G, "BulwarkDB")
-  BulwarkDB = type(saved) == "table" and saved or {}
-  fill(BulwarkDB, self.DEFAULTS)
-  self.db = BulwarkDB
-end
-
 -------------------------------------------------------------------------------------------
 -- Calling the client: any call may be missing, refuse, or answer with a secret
 -------------------------------------------------------------------------------------------
 
 ---The first answer of fn(...), or nil if it errored. May be secret.
 local function ask(fn, ...)
-  if type(fn) ~= "function" then return nil end
-  local ok, v = pcall(fn, ...)
+  local ok, v = Core.Call(fn, ...)
   if ok then return v end
 end
 
----The answer only when it's plain; nil when it's secret, missing or errored.
-local function plain(fn, ...)
-  local v = ask(fn, ...)
-  if IsSecret(v) then return nil end
-  return v
-end
+---The answers only when they're plain; nil when secret, missing or errored.
+local plain = Core.Plain
 
 -------------------------------------------------------------------------------------------
 -- Who's a tank
@@ -445,12 +458,6 @@ function B:LearnGroup()
   for _, u in ipairs(self:GroupUnits()) do self:LearnTank(u) end
 end
 
-Core:On("ADDON_LOADED", B, function(_, name)
-  if name ~= B.addonName then return end
-  Core:Off("ADDON_LOADED", B)
-  B:InitDB()
-end)
-
 Core:OnLogin(function()
   if not B.db then return end
   hookBlizzard()
@@ -483,71 +490,10 @@ Core:OnLogin(function()
 end)
 
 -------------------------------------------------------------------------------------------
--- Commands and the suite
+-- Settings changed
 -------------------------------------------------------------------------------------------
-
-Core:RegisterAddon("bulwark", {
-  version = C_AddOns and C_AddOns.GetAddOnMetadata(B.addonName, "Version") or "0.1.0",
-  open = function() B:OpenSettings() end,
-})
-
-function B:OpenSettings()
-  if self.settingsCategory and Settings and Settings.OpenToCategory then
-    pcall(Settings.OpenToCategory, self.settingsCategory:GetID())
-  end
-end
 
 function B:Changed()
   self:UpdateAll()
   if self.Marks then self.Marks:UpdateAll() end
-end
-
-local function onClick(button)
-  if button == "RightButton" then
-    B.db.enabled = not B.db.enabled
-    B:Changed()
-    B:Print(B.db.enabled and "Colouring nameplates." or "Off: Blizzard's colours are back.")
-  else
-    B:OpenSettings()
-  end
-end
-local function tooltip(tt)
-  tt:AddLine("Bulwark", B.ACCENT[1], B.ACCENT[2], B.ACCENT[3])
-  tt:AddLine("Combat & aggro", 1, 1, 1)
-  tt:AddLine(B.db and B.db.enabled and "Colouring enemy nameplates" or "Off", .7, .7, .7)
-  tt:AddLine("Click: settings  ·  Right-click: on or off  ·  Drag: move", .43, .4, .32)
-end
-Core:OnLogin(function()
-  if B.db and Core.MinimapButton then Core.MinimapButton:Add("bulwark", { onClick = onClick, tooltip = tooltip }) end
-end)
-function Bulwark_OnAddonCompartmentClick(_, button) onClick(button) end
-function Bulwark_OnAddonCompartmentEnter(_, frame)
-  GameTooltip:SetOwner(frame, "ANCHOR_LEFT")
-  tooltip(GameTooltip)
-  GameTooltip:Show()
-end
-function Bulwark_OnAddonCompartmentLeave() GameTooltip:Hide() end
-
-local MODES = { auto = "Auto", tank = "Tank", dps = "Not tanking" }
-
-SLASH_BULWARK1 = "/bulwark"
-SlashCmdList["BULWARK"] = function(msg)
-  local lower = string.lower(strtrim(msg or ""))
-  if lower == "" or lower == "settings" or lower == "options" then
-    B:OpenSettings()
-  elseif lower == "on" or lower == "off" then
-    B.db.enabled = lower == "on"
-    B:Changed()
-    B:Print(B.db.enabled and "Colouring nameplates." or "Off: Blizzard's colours are back.")
-  elseif lower == "tank" or lower == "dps" or lower == "auto" then
-    B.db.mode = lower
-    B:Changed()
-    B:Print("Mode: " .. MODES[lower] .. ".")
-  elseif lower == "status" then
-    B:Print(("%s. Mode: %s (%s now). Flash: %s at %d%%.")
-      :format(B.db.enabled and "On" or "Off", MODES[B.db.mode] or B.db.mode, B:TankMode() and "tanking" or "not tanking",
-        B.db.flash and "on" or "off", B.db.flashAt))
-  else
-    B:Print("/bulwark opens settings. Also: on, off, tank, dps, auto, status")
-  end
 end

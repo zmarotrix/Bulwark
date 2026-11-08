@@ -117,10 +117,8 @@ Core:OnLogin(function()
   end
   list:Buttons("Try it", "A training dummy or any mob shows the colours; /bulwark status says which mode you're in.", {
     { "Status", function() SlashCmdList.BULWARK("status") end } })
-  list:Toggle("Show the minimap button", "Bulwark is also in the game's add-on menu and opens with /bulwark.",
-    function() return Core.MinimapButton:IsShown("bulwark") end, function(on) Core.MinimapButton:SetShown("bulwark", on) end)
 
   page:SetScript("OnShow", function() list:Refresh() end)
   B.settingsPage = page
-  B.settingsCategory = Core:AddSettingsPage(page, "Bulwark")
+  B:AddSettingsPage(page)
 end)
