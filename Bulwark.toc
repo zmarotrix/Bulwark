@@ -1,12 +1,17 @@
 ## Interface: 16001
-## Title: |cff7fb2ffBulwark|r
+## Title: |cff3d66e8Bulwark|r
 ## Category: NorgannonDB
-## Notes: Tank nameplates: each enemy's health bar is coloured by who it's on, and flashes when you're about to lose it. Powered by NorgannonDB. /bulwark
+## Notes: Combat and aggro on enemy nameplates: health bars coloured by who the mob is on, a flash before you lose it, and raid marks you can see in a crowd. Powered by NorgannonDB. /bulwark
 ## Author: Maro
-## Version: 0.1.0
+## Version: 0.2.0
 ## X-License: All Rights Reserved
 ## Dependencies: NorgannonDB, NorgannonDB_Core
 ## SavedVariables: BulwarkDB
+## IconTexture: Interface\AddOns\NorgannonDB_Core\media\marks\bulwark
+## AddonCompartmentFunc: Bulwark_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: Bulwark_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: Bulwark_OnAddonCompartmentLeave
 
 core.lua
+marks.lua
 settings.lua

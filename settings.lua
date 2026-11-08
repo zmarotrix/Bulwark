@@ -49,6 +49,13 @@ Core:OnLogin(function()
   list:Slider("Close means", "Someone's threat as a share of what it takes to pull the mob.", 70, 100, 5,
     function() return B.db.flashAt end, function(v) B.db.flashAt = v B:Changed() end, "%.0f%%", 1)
 
+  list:Header("Raid marks")
+  local function mark(key) return function() return B.db.marks[key] end, function(v) B.db.marks[key] = v B:Changed() end end
+  list:Toggle("Bigger raid marks", "Our own mark in place of Blizzard's small one, so skull and cross stand out in a crowd.", mark("enabled"))
+  list:Slider("Size", nil, 20, 64, 2, function() return B.db.marks.size end, function(v) B.db.marks.size = v B:Changed() end, "%.0f px", 1)
+  list:Dropdown("Where", nil, { { "above", "Above the name" }, { "left", "Left of the health bar" } }, mark("where"))
+  list:Toggle("Dark disc behind it", "Keeps the mark readable against bright spell effects and ground.", mark("backdrop"))
+
   list:Header("Colours")
   for _, def in ipairs(COLORS) do
     local key = def[1]
@@ -67,6 +74,8 @@ Core:OnLogin(function()
   end
   list:Buttons("Try it", "A training dummy or any mob shows the colours; /bulwark status says which mode you're in.", {
     { "Status", function() SlashCmdList.BULWARK("status") end } })
+  list:Toggle("Show the minimap button", "Bulwark is also in the game's add-on menu and opens with /bulwark.",
+    function() return Core.MinimapButton:IsShown("bulwark") end, function(on) Core.MinimapButton:SetShown("bulwark", on) end)
 
   page:SetScript("OnShow", function() list:Refresh() end)
   B.settingsCategory = Core:AddSettingsPage(page, "Bulwark")

@@ -1,5 +1,6 @@
--- Bulwark: tank nameplates. Colours Blizzard's own enemy nameplate health bars by who the mob is on, and flashes the bar
--- when you're about to lose it. Nothing else about the plates changes. Built on NorgannonDB_Core.
+-- Bulwark: a combat and aggro toolkit on Blizzard's own nameplates. Built on NorgannonDB_Core.
+-- core.lua colours each enemy's health bar by who the mob is on and flashes it when you're about to lose it;
+-- marks.lua draws bigger raid marks. Everything else about the plates is Blizzard's.
 --
 -- What the client allows (PlateProbe, 2026-11-07): Blizzard's enemy plate health bars can be repainted and the paint
 -- holds; threat and "who is the mob targeting" can be read on nameplateN units. If any of those turns secret in some
@@ -23,13 +24,13 @@ B.addonName = ADDON or "Bulwark"
 if not (Core and Core:Require(1, 17)) then
   B.disabled = true
   C_Timer.After(5, function()
-    print("|cff7fb2ffBulwark|r needs NorgannonDB Core 1.17 or newer; it is turned off.")
+    print("|cff3d66e8Bulwark|r needs NorgannonDB Core 1.17 or newer; it is turned off.")
   end)
   return
 end
 
-B.PREFIX = "|cff7fb2ffBulwark|r"
-B.ACCENT = { 0.5, 0.7, 1 }
+B.PREFIX = "|cff3d66e8Bulwark|r"
+B.ACCENT = { 0.239, 0.4, 0.91 }   -- dark blue, #3d66e8 (brand/README.md)
 function B:Print(msg) Core:Print(msg, self.PREFIX) end
 local IsSecret = Core.IsSecret
 
@@ -38,6 +39,12 @@ B.DEFAULTS = {
   mode = "auto",          -- "auto": tank mode when you're a tank (role, stance or form) or alone; "tank"; "dps"
   flash = true,
   flashAt = 90,           -- flash when someone else's threat reaches this % of what it takes to pull the mob off you
+  marks = {
+    enabled = true,       -- our own bigger raid marks, in place of Blizzard's small ones
+    size = 34,
+    where = "above",      -- "above" the name, or "left" of the bar where Blizzard puts its own
+    backdrop = true,      -- a soft dark disc behind the mark, so it stands out on a busy screen
+  },
   colors = {
     me = { 0.2, 0.85, 0.25 },
     other = { 0.92, 0.15, 0.12 },
@@ -438,7 +445,34 @@ end
 
 function B:Changed()
   self:UpdateAll()
+  if self.Marks then self.Marks:UpdateAll() end
 end
+
+local function onClick(button)
+  if button == "RightButton" then
+    B.db.enabled = not B.db.enabled
+    B:Changed()
+    B:Print(B.db.enabled and "Colouring nameplates." or "Off: Blizzard's colours are back.")
+  else
+    B:OpenSettings()
+  end
+end
+local function tooltip(tt)
+  tt:AddLine("Bulwark", B.ACCENT[1], B.ACCENT[2], B.ACCENT[3])
+  tt:AddLine("Combat & aggro", 1, 1, 1)
+  tt:AddLine(B.db and B.db.enabled and "Colouring enemy nameplates" or "Off", .7, .7, .7)
+  tt:AddLine("Click: settings  ·  Right-click: on or off  ·  Drag: move", .43, .4, .32)
+end
+Core:OnLogin(function()
+  if B.db and Core.MinimapButton then Core.MinimapButton:Add("bulwark", { onClick = onClick, tooltip = tooltip }) end
+end)
+function Bulwark_OnAddonCompartmentClick(_, button) onClick(button) end
+function Bulwark_OnAddonCompartmentEnter(_, frame)
+  GameTooltip:SetOwner(frame, "ANCHOR_LEFT")
+  tooltip(GameTooltip)
+  GameTooltip:Show()
+end
+function Bulwark_OnAddonCompartmentLeave() GameTooltip:Hide() end
 
 local MODES = { auto = "Auto", tank = "Tank", dps = "Not tanking" }
 

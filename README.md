@@ -1,7 +1,8 @@
 # Bulwark
 
-Tank nameplates for WoW Forever. Each enemy's health bar, on Blizzard's own nameplates, is coloured by who the mob is on,
-and flashes when you're about to lose it. Powered by NorgannonDB.
+A combat and aggro toolkit for WoW Forever, on Blizzard's own nameplates. Each enemy's health bar is coloured by who the
+mob is on and flashes when you're about to lose it, and raid marks are drawn big enough to find in a crowd.
+Powered by NorgannonDB.
 
 | Colour | Tanking | Not tanking |
 |---|---|---|
