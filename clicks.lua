@@ -118,6 +118,8 @@ function S:Build()
       b:SetScript("OnDragStop", L.StopDrag)
       b.row = L:MakeRow(b, true)
       b.row:SetAllPoints(b)
+      b:HookScript("OnMouseDown", function(_, button) S:Note(i, "the mouse reached the row (" .. tostring(button) .. ")") end)
+      b:HookScript("PostClick", function(_, button, down) S:Clicked(i, button, down) end)
       b:HookScript("OnEnter", function(self)
         self.row.hover = true
         self.row:SetTarget(self.row.isTarget)
@@ -193,6 +195,46 @@ function S:SetPref(force)
     h:SetAttribute("pref", pref)
     if h.Execute then h:Execute(RELAYOUT) end
   end
+end
+
+---/bulwark clicks: say where a click on a row gets to, to find out why one doesn't target.
+function S:Debug()
+  self.debug = not self.debug
+  if not self.debug then B:Print("Click report off.") return end
+  local h, db = self.header, B.db.list
+  local lines = {
+    ("Click report on: click a row (in combat too); /bulwark clicks again to stop. Click to target: %s. Secure list: %s.")
+      :format(db.click and "on" or "off", self.failed and ("failed (" .. self.failed .. ")") or (h and "built" or "not built")),
+  }
+  if h then
+    lines[#lines + 1] = ("Shown: %s. Driver: %s. Rows laid out: %s. In combat now: %s.")
+      :format(tostring(h:IsShown()), tostring(self.driver), tostring(h:GetAttribute("count")), tostring(InCombatLockdown()))
+  end
+  local CB = rawget(_G, "C_ClickBindings")
+  if CB and CB.GetBindingType then
+    local ok, kind = pcall(CB.GetBindingType, "LeftButton", "")
+    local E = rawget(_G, "Enum") and Enum.ClickBindingType
+    local name = tostring(kind)
+    if ok and E then for k, v in pairs(E) do if v == kind then name = k end end end
+    lines[#lines + 1] = "Left click on unit frames is bound to: " .. (ok and name or "?") .. " (Target needs Interaction)."
+  end
+  for _, l in ipairs(lines) do B:Print(l) end
+end
+
+function S:Note(i, what)
+  if self.debug then B:Print(("Row %d (nameplate%d): %s."):format(i, i, what)) end
+end
+
+function S:Clicked(i, button, down)
+  if not self.debug then return end
+  local u = "nameplate" .. i
+  self:Note(i, ("the game ran the click (%s, %s); the mob %s, you %s attack it"):format(tostring(button),
+    down and "down" or "up", plain(UnitExists, u) and "exists" or "doesn't exist",
+    plain(UnitCanAttack, "player", u) and "can" or "can't"))
+  C_Timer.After(0.1, function()
+    local same = plain(UnitIsUnit, "target", u)
+    self:Note(i, same == nil and "can't tell whether it's your target now" or (same and "it's your target now" or "your target didn't change to it"))
+  end)
 end
 
 function S:Hide()

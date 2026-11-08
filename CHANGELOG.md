@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.3, 2026-11-07
+
+- The mob list's bars use the plate colours toned down to 60%, so a column of them doesn't shout over the screen; the
+  nameplates themselves stay vivid.
+- **Raid mark size** slider for the mark at the left of each row (default 20 px).
+- `/bulwark clicks` reports what happens to a click on a row: whether the mouse reached it, whether the game ran the
+  click, and whether your target changed. Clicking a row didn't target in the first test in game; this finds out why.
+
 ## 0.7.2, 2026-11-07
 
 - The mob list tracks **Lacerate** (15 seconds). Debuffs that stack (Lacerate, Sunder Armor) count up with each cast, to

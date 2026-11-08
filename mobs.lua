@@ -409,7 +409,8 @@ function L:LayoutParts(r)
   local size = math.max(9, math.floor(h * 0.62))
   r.mark:ClearAllPoints()
   r.mark:SetPoint("LEFT", 0, 0)
-  r.mark:SetSize(h, h)
+  local m = db.markSize or h
+  r.mark:SetSize(m, m)
   r.well:ClearAllPoints()
   r.well:SetPoint("LEFT", r.mark, "RIGHT", 4, 0)
   r.well:SetSize(w, h)
@@ -436,7 +437,7 @@ end
 function L:Width()
   local db = B.db.list
   local dots = db.dots and MAX_DOTS * (db.height + 3) or 0
-  return 4 + db.height + 4 + db.width + 4 + dots + 4
+  return 4 + (db.markSize or db.height) + 4 + db.width + 4 + dots + 4
 end
 
 ---The list's height for n rows.
@@ -518,19 +519,26 @@ function L:Row(i)
   return r
 end
 
+---The plate colour, toned down for a long bar in a list: the plates stay vivid, a column of full-strength green or red
+---bars would shout over everything else on screen.
+local function tone(c)
+  return { c[1] * 0.6 + 0.04, c[2] * 0.6 + 0.04, c[3] * 0.6 + 0.04 }
+end
+L.Tone = tone
+
 local function paintBar(r, unit)
   local v = B:Verdict(unit)
   r.warn:SetShown(v and v.flash and true or false)
   if v and v.secretIsMe ~= nil then
     local CU = rawget(_G, "C_CurveUtil")
-    local mine, theirs = B:ColorFor({ who = "me", tankMode = v.tankMode }), B:ColorFor({ who = "other", tankMode = v.tankMode })
+    local mine, theirs = tone(B:ColorFor({ who = "me", tankMode = v.tankMode })), tone(B:ColorFor({ who = "other", tankMode = v.tankMode }))
     local ok, c = Core.Call(CU and CU.EvaluateColorFromBoolean, v.secretIsMe,
       CreateColor(mine[1], mine[2], mine[3], 1), CreateColor(theirs[1], theirs[2], theirs[3], 1))
     if ok and c and pcall(function() r.bar:SetStatusBarColor(c:GetRGB()) end) then return end
     v = nil
   end
   local c
-  if v then c = B:ColorFor(v)
+  if v then c = tone(B:ColorFor(v))
   else c = plain(UnitReaction, unit, "player") == 4 and NEUTRAL or HOSTILE end
   r.bar:SetStatusBarColor(c[1], c[2], c[3])
 end
@@ -651,7 +659,7 @@ function L:Refresh()
       r.hp:SetFormattedText("%d%%", s.pct)
       r.bar:SetMinMaxValues(0, 100)
       r.bar:SetValue(s.pct)
-      local c = B:ColorFor({ who = s.who, tankMode = B:TankMode() })
+      local c = tone(B:ColorFor({ who = s.who, tankMode = B:TankMode() }))
       r.bar:SetStatusBarColor(c[1], c[2], c[3])
       r.warn:SetShown(s.flash and true or false)
       if s.mark then SetRaidTargetIconTexture(r.mark, s.mark) r.mark:Show() else r.mark:Hide() end
