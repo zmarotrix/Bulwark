@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0, 2026-11-07
+
+- **Threat % on each plate**, in combat: tanking a mob, how close the next person is to pulling it off you ("72%");
+  otherwise, how close you are to pulling it. White while safe, yellow 20 points before the flash line, red at it.
+  Hidden when you're alone and holding the mob. Text size and place (inside the bar or below it) are in settings.
+
 ## 0.2.0, 2026-11-07
 
 - Bulwark is now a combat and aggro toolkit, and has its own mark (a shield with two chevrons) and colour, dark blue. It's

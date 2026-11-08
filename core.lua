@@ -1,6 +1,6 @@
 -- Bulwark: a combat and aggro toolkit on Blizzard's own nameplates. Built on NorgannonDB_Core.
 -- core.lua colours each enemy's health bar by who the mob is on and flashes it when you're about to lose it;
--- marks.lua draws bigger raid marks. Everything else about the plates is Blizzard's.
+-- threat.lua puts a threat % on each plate; marks.lua draws bigger raid marks. Everything else about the plates is Blizzard's.
 --
 -- What the client allows (PlateProbe, 2026-11-07): Blizzard's enemy plate health bars can be repainted and the paint
 -- holds; threat and "who is the mob targeting" can be read on nameplateN units. If any of those turns secret in some
@@ -39,6 +39,11 @@ B.DEFAULTS = {
   mode = "auto",          -- "auto": tank mode when you're a tank (role, stance or form) or alone; "tank"; "dps"
   flash = true,
   flashAt = 90,           -- flash when someone else's threat reaches this % of what it takes to pull the mob off you
+  threatText = {
+    enabled = true,       -- a small threat % on each enemy plate in combat (threat.lua)
+    size = 10,
+    where = "inside",     -- "inside" the bar at its right end, or "below" it
+  },
   marks = {
     enabled = true,       -- our own bigger raid marks, in place of Blizzard's small ones
     size = 34,
@@ -338,10 +343,11 @@ end
 
 function B:Update(unit)
   if not self.db or IsSecret(unit) or type(unit) ~= "string" then return end
-  if not self.db.enabled then self:Restore(unit) return end
   local plate = plateFrame(unit)
   local bar = plate and healthBarOf(plate)
   if not bar then self.painted[unit] = nil return end
+  if self.Threat then self.Threat:Update(unit, plate, bar) end
+  if not self.db.enabled then self:Restore(unit) return end
   local v = self:Verdict(unit)
   if not v then self:Restore(unit) return end
 
@@ -410,6 +416,8 @@ Core:OnLogin(function()
     local p = B.painted[unit]
     if p and p.plate then setFlash(p.plate, p.bar, false) end
     B.painted[unit] = nil
+    local plate = plateFrame(unit)
+    if plate and B.Threat then B.Threat:Hide(plate) end
   end)
   Core:On("UNIT_THREAT_LIST_UPDATE", B, onPlate)
   Core:On("UNIT_THREAT_SITUATION_UPDATE", B, function() B:UpdateAll() end)

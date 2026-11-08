@@ -49,6 +49,12 @@ Core:OnLogin(function()
   list:Slider("Close means", "Someone's threat as a share of what it takes to pull the mob.", 70, 100, 5,
     function() return B.db.flashAt end, function(v) B.db.flashAt = v B:Changed() end, "%.0f%%", 1)
 
+  list:Header("Threat %")
+  local function tt(key) return function() return B.db.threatText[key] end, function(v) B.db.threatText[key] = v B:Changed() end end
+  list:Toggle("Threat % on each plate", "Tanking a mob: how close the next person is to pulling it off you. Otherwise: how close you are to pulling it. Yellow 20 points before the flash line, red at it.", tt("enabled"))
+  list:Slider("Text size", nil, 8, 16, 1, function() return B.db.threatText.size end, function(v) B.db.threatText.size = v B:Changed() end, "%.0f", 1)
+  list:Dropdown("Where", nil, { { "inside", "Inside the bar, at its right end" }, { "below", "Below the bar" } }, tt("where"))
+
   list:Header("Raid marks")
   local function mark(key) return function() return B.db.marks[key] end, function(v) B.db.marks[key] = v B:Changed() end end
   list:Toggle("Bigger raid marks", "Our own mark in place of Blizzard's small one, so skull and cross stand out in a crowd.", mark("enabled"))
