@@ -137,7 +137,7 @@ Core:NewAddon("bulwark", {
   minimap = {
     onShiftClick = function() setEnabled(not B.db.enabled) end,
     shiftHint = "on or off",
-    status = function() return B.db and (B.db.enabled and "Colouring enemy nameplates" or "Off") end,
+    status = function() return B.db and not B.db.enabled and "Off" or nil end,   -- otherwise the role shows
   },
 })
 if B.disabled then return end

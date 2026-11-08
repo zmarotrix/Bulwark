@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.4, 2026-11-08
+
+- The minimap list shows Bulwark's role, "Aggro management", and says "Off" only when it's turned off.
+
 ## 0.7.3, 2026-11-07
 
 - The mob list's bars use the plate colours toned down to 60%, so a column of them doesn't shout over the screen; the
