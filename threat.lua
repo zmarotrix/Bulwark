@@ -19,6 +19,7 @@ local WHITE = { 0.95, 0.95, 0.95 }
 function Threat:Number(plate)
   local okA, attackable = pcall(UnitCanAttack, "player", plate)
   if okA and not IsSecret(attackable) and not attackable then return nil end
+  if B:TappedByOthers(plate) then return nil end
   local okC, fighting = pcall(UnitAffectingCombat, plate)
   if not okC or (not IsSecret(fighting) and not fighting) then return nil end
   local ok, isTanking, _, pct = pcall(UnitDetailedThreatSituation, "player", plate)

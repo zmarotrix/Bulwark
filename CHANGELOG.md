@@ -2,6 +2,11 @@
 
 ## 0.7.4, 2026-11-08
 
+- A mob tagged by someone outside your group isn't your fight: its plate keeps Blizzard's tapped grey, with no flash
+  and no threat %. In the mob list its bar is grey too.
+
+## 0.7.4, 2026-11-08
+
 - The minimap list shows Bulwark's role, "Aggro management", and says "Off" only when it's turned off.
 
 ## 0.7.3, 2026-11-07

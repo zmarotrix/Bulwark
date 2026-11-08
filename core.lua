@@ -279,8 +279,14 @@ function B:OthersTopPercent(plate)
   return top
 end
 
+---Someone outside your group has the tag on it: not your fight, so its plate stays Blizzard's (tapped grey).
+function B:TappedByOthers(unit)
+  return plain(UnitIsTapDenied, unit) == true
+end
+
 function B:Verdict(plate)
   if plain(UnitCanAttack, "player", plate) == false then return nil end
+  if self:TappedByOthers(plate) then return nil end
   local fighting = ask(UnitAffectingCombat, plate)
   if not IsSecret(fighting) and not fighting then return nil end
 

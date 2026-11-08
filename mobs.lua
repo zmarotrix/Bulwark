@@ -249,7 +249,7 @@ end
 -------------------------------------------------------------------------------------------
 
 local MAX_DOTS = 6
-local HOSTILE, NEUTRAL = { 0.6, 0.22, 0.18 }, { 0.85, 0.7, 0.2 }
+local HOSTILE, NEUTRAL, TAPPED = { 0.6, 0.22, 0.18 }, { 0.85, 0.7, 0.2 }, { 0.42, 0.42, 0.42 }
 local SAVE_KEY = "BulwarkMobList"
 
 local percentCurve
@@ -539,6 +539,7 @@ local function paintBar(r, unit)
   end
   local c
   if v then c = tone(B:ColorFor(v))
+  elseif B:TappedByOthers(unit) then c = TAPPED
   else c = plain(UnitReaction, unit, "player") == 4 and NEUTRAL or HOSTILE end
   r.bar:SetStatusBarColor(c[1], c[2], c[3])
 end
