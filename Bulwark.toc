@@ -5,7 +5,7 @@
 ## Author: Maro
 ## Version: 0.4.0
 ## X-License: All Rights Reserved
-## Dependencies: NorgannonDB, NorgannonDB_Core
+## Dependencies: NorgannonDB_Core
 ## SavedVariables: BulwarkDB
 ## IconTexture: Interface\AddOns\NorgannonDB_Core\media\marks\bulwark
 ## AddonCompartmentFunc: Bulwark_OnAddonCompartmentClick
