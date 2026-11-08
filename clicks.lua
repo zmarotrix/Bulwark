@@ -107,7 +107,11 @@ function S:Build()
     h:SetAttribute("_onstate-fight", RELAYOUT)
     for i = 1, MAX_UNITS do
       local unit = "nameplate" .. i
-      local b = CreateFrame("Button", "BulwarkMobButton" .. i, h, "SecureUnitButtonTemplate")
+      -- SecureActionButtonTemplate, not SecureUnitButtonTemplate: the unit template's click first asks the game's
+      -- click bindings (C_ClickBindings) and silently drops a "target" click when left click isn't bound to its
+      -- Interaction there, which on this server's accounts it may not be (0.7.0-0.7.4 rows never targeted, no error).
+      -- The action template runs the same "target" action (TargetUnit) without that check.
+      local b = CreateFrame("Button", "BulwarkMobButton" .. i, h, "SecureActionButtonTemplate")
       b:SetID(i)
       b:SetAttribute("unit", unit)
       b:SetAttribute("*type1", "target")
@@ -221,12 +225,18 @@ function S:Debug()
   for _, l in ipairs(lines) do B:Print(l) end
 end
 
+---Every row click is also kept in the saved settings (the last 30), so a click that didn't target can be looked at
+---after a /reload without anyone copying chat.
 function S:Note(i, what)
-  if self.debug then B:Print(("Row %d (nameplate%d): %s."):format(i, i, what)) end
+  local line = ("Row %d (nameplate%d): %s."):format(i, i, what)
+  local log = B.db.clickLog
+  if type(log) ~= "table" then log = {} B.db.clickLog = log end
+  log[#log + 1] = date("%H:%M:%S") .. (InCombatLockdown() and " [combat] " or " ") .. line
+  while #log > 30 do table.remove(log, 1) end
+  if self.debug then B:Print(line) end
 end
 
 function S:Clicked(i, button, down)
-  if not self.debug then return end
   local u = "nameplate" .. i
   self:Note(i, ("the game ran the click (%s, %s); the mob %s, you %s attack it"):format(tostring(button),
     down and "down" or "up", plain(UnitExists, u) and "exists" or "doesn't exist",

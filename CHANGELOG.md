@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.5, 2026-11-08
+
+- Clicking a mob-list row should now target the mob. The rows were the game's unit-frame buttons, whose click first
+  checks your click bindings and silently drops a "target" click when left click isn't bound there. They're now
+  action buttons, which target directly.
+- Every row click is kept in Bulwark's saved settings (the last 30), so a click that still doesn't target can be looked
+  at after a /reload.
+
 ## 0.7.4, 2026-11-08
 
 - A mob tagged by someone outside your group isn't your fight: its plate keeps Blizzard's tapped grey, with no flash
