@@ -9,7 +9,11 @@
 --     A resist or immune still shows a timer: in combat nothing tells us it missed.
 --   * Health is always secret: the bar and the % get it straight from the client; nothing here reads it.
 --   * Cursive sees every mob by GUID through nampower. Here a mob is on the list while it has a nameplate.
---   * Clicking a row targets the mob: clicks.lua, with secure buttons the game lays out itself in combat.
+--   * Rows can't target on click. 0.7.0-0.7.6 tried: secure buttons on nameplate1-40 that the game itself laid out in
+--     combat. In game (2026-11-08) every click reached its row and the game ran the target action ("target" type and a
+--     /target nameplateN macro alike), with no error, and the target never changed: this client doesn't let add-ons
+--     target a mob through its nameplate token. So the list stays plain, sorted freely, and hovering a row shows the
+--     mob's tooltip.
 --   * The handle (mark and name) always shows while the list is on, so you can move it; with no mobs it's dimmed and
 --     the rows are gone. The list hangs from its top-left corner, so rows come and go below a title that stays put.
 
@@ -292,43 +296,29 @@ local function place(f)
   pinTop(f)
 end
 
--- the frame being shown: the secure one while it's in use, else the plain one
-local function mover()
-  local S = L.Secure
-  if S and S.header and S.driver ~= "hide" and S.header:IsShown() then return S.header end
-  return L.frame
-end
 local function startDrag()
-  local f = mover()
+  local f = L.frame
   if f and not B.db.list.locked and not InCombatLockdown() then f:StartMoving() f.moving = true end
 end
 local function stopDrag()
-  local f = mover()
+  local f = L.frame
   if not (f and f.moving) then return end
   f.moving = nil
   f:StopMovingOrSizing()
   pinTop(f)
   UI.SavePosition(f, SAVE_KEY)
-  for _, other in ipairs({ L.frame, L.Secure and L.Secure.header }) do
-    if other and other ~= f and not InCombatLockdown() then place(other) end
-  end
 end
 
 L.StartDrag, L.StopDrag = startDrag, stopDrag
 
 ---One row's pieces, in the suite's look: a dark well with a 1px edge (gold on your target), the bar inside it, the
----name in the suite's bold face, and your debuffs as framed icons. passive: it sits on a secure button that takes the
----mouse (clicks.lua).
-function L:MakeRow(f, passive)
+---name in the suite's bold face, and your debuffs as framed icons. A row drags the list and shows the mob's tooltip.
+function L:MakeRow(f)
   local r = CreateFrame("Frame", nil, f)
-  if passive then
-    r:EnableMouse(false)
-  else
-    r:EnableMouse(true)
-    r:RegisterForDrag("LeftButton")
-    r:SetScript("OnDragStart", startDrag)
-    r:SetScript("OnDragStop", stopDrag)
-  end
+  r:EnableMouse(true)
+  r:RegisterForDrag("LeftButton")
+  r:SetScript("OnDragStart", startDrag)
+  r:SetScript("OnDragStop", stopDrag)
   r.mark = r:CreateTexture(nil, "ARTWORK")
   r.mark:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
   r.well = CreateFrame("Frame", nil, r)
@@ -377,10 +367,8 @@ function L:MakeRow(f, passive)
     self.box:Set(on and UI.C.gold or (self.hover and UI.C.goldSoft or UI.C.black), { UI.C.inset[1], UI.C.inset[2], UI.C.inset[3], 0.85 })
   end
   r:SetTarget(false)
-  if not passive then
-    r:SetScript("OnEnter", function(self) L.Tooltip(self, self.unit) end)
-    r:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  end
+  r:SetScript("OnEnter", function(self) L.Tooltip(self, self.unit) end)
+  r:SetScript("OnLeave", function() GameTooltip:Hide() end)
   return r
 end
 
@@ -619,13 +607,6 @@ function L:Refresh()
     return
   end
   self:Expire()
-  local S = self.Secure
-  if S and S:Active() and not self.preview then
-    if self.frame then self.frame:Hide() end
-    S:Refresh()
-    return
-  end
-  if S then S:Hide() end
   local f = self:Build()
   local mobs
   if self.preview then
@@ -683,7 +664,6 @@ end
 function L:Preview(on)
   if on == nil then on = not self.preview end
   self.preview = on
-  if self.Secure then self.Secure:Apply() end
   if on and not B.db.list.enabled then B:Print("The mob list is turned off in settings; this is how it would look.") end
   self:Refresh()
 end
@@ -691,7 +671,6 @@ end
 ---Settings changed: lay the rows out again.
 function L:Changed()
   self.gen = self.gen + 1
-  if self.Secure then self.Secure:Apply() end
   if self.frame then self:Refresh() end
 end
 
@@ -701,7 +680,6 @@ function L:ResetPosition()
   defaultPoint(f)
   pinTop(f)
   UI.SavePosition(f, SAVE_KEY)
-  if self.Secure and self.Secure.header then place(self.Secure.header) end
 end
 
 L.keyOf, L.MARK_ORDER, L.SAVE_KEY = keyOf, MARK_ORDER, SAVE_KEY
@@ -716,6 +694,7 @@ end
 
 Core:OnLogin(function()
   if not B.db then return end
+  B.db.list.click, B.db.clickLog = nil, nil   -- left by 0.7.0-0.7.6's click to target
   Core:On("UNIT_SPELLCAST_SENT", L, function(_, unit, _, castGUID) L:OnSent(unit, castGUID) end)
   Core:On("UNIT_SPELLCAST_SUCCEEDED", L, function(_, unit, castGUID, id) L:OnSucceeded(unit, castGUID, id) end)
   Core:On("UNIT_AURA", L, function(_, unit) if isPlate(unit) then L:Read(unit) end end)

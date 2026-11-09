@@ -73,7 +73,6 @@ Core:OnLogin(function()
   list:Slider("Bar width", nil, 90, 260, 10, function() return B.db.list.width end, function(v) B.db.list.width = v B:Changed() end, "%.0f px", 1)
   list:Slider("Row height", nil, 14, 30, 1, function() return B.db.list.height end, function(v) B.db.list.height = v B:Changed() end, "%.0f px", 1)
   list:Slider("Raid mark size", "The mark at the left of each row.", 12, 40, 1, function() return B.db.list.markSize end, function(v) B.db.list.markSize = v B:Changed() end, "%.0f px", 1)
-  list:Toggle("Click a row to target it", "Works in combat. The game only lets secure buttons target, and it lays them out itself during a fight, so in combat the rows go in the order mobs appeared (marked mobs first, as marked before the pull), and a mob not yet in the fight shows dimmed. Off, the list sorts freely but rows can't be clicked. /bulwark clicks reports what happens to a click.", ml("click"))
   list:Slider("Background", "The panel behind the rows. At 0 only the Bulwark handle and the bars show.", 0, 100, 5,
     function() return B.db.list.background end, function(v) B.db.list.background = v B:Changed() end, "%.0f%%", 1)
   list:Toggle("Lock it in place", "Off, drag the list by the Bulwark mark and name above it.", ml("locked"))

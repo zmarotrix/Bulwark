@@ -3,7 +3,7 @@
 ## Category: NorgannonDB
 ## Notes: Combat and aggro on enemy nameplates: health bars coloured by who the mob is on, a flash before you lose it, threat %, raid marks you can see in a crowd, and a mob list with your DoT timers. Powered by NorgannonDB. /bulwark
 ## Author: Maro
-## Version: 0.7.6
+## Version: 0.8.0
 ## X-License: All Rights Reserved
 ## Dependencies: NorgannonDB_Core
 ## SavedVariables: BulwarkDB
@@ -16,5 +16,4 @@ core.lua
 threat.lua
 marks.lua
 mobs.lua
-clicks.lua
 settings.lua

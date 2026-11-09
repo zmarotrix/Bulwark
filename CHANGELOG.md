@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0, 2026-11-08
+
+- **Click to target is gone.** Tested in game with a click log: every click reached its row and the game ran the target
+  action (as a "target" button and as a `/target nameplateN` macro), with no error, and the target never changed. This
+  client doesn't let add-ons target a mob through its nameplate, so the setting could only cost you the better sorting.
+- So the list sorts freely again in combat: marks put on mid-fight move a mob up, only mobs in the fight are listed, and
+  your target always keeps a row. Hovering a row still shows the mob's tooltip; drag the list by its handle or a row.
+- `/bulwark clicks` and the click log are gone with it.
+
 ## 0.7.6, 2026-11-08
 
 - Click to target, still being worked out: the 0.7.5 log showed every click reaching the row and the game running its

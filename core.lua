@@ -53,7 +53,6 @@ B.DEFAULTS = {
     markSize = 20,        -- the raid mark at the left of each row, px
     locked = false,
     background = 0,       -- the panel behind the rows, 0-100 %; 0 leaves just the handle and the bars
-    click = true,         -- rows are secure buttons: click one to target that mob, in combat too (clicks.lua)
     learned = {},         -- spell name -> seconds, read off a mob out of combat (talents and ranks included)
   },
   scheme = "default",      -- a key of B.SCHEMES, or "custom" once you change a colour yourself
@@ -126,8 +125,6 @@ Core:NewAddon("bulwark", {
     dps = { setMode("dps"), "never tank mode" },
     auto = { setMode("auto"), "tank mode when your role, form or stance says so" },
     list = { function() if B.MobList then B.MobList:Preview() end end, "show the mob list with sample mobs, to move it" },
-    clicks = { function() if B.MobList and B.MobList.Secure then B.MobList.Secure:Debug() end end,
-      "report what happens when you click a mob-list row (again to stop)" },
     status = { function()
       B:Print(("%s. Mode: %s (%s now). Flash: %s at %d%%.")
         :format(B.db.enabled and "On" or "Off", MODES[B.db.mode] or B.db.mode, B:TankMode() and "tanking" or "not tanking",
