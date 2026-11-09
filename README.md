@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/banner.png" alt="Bulwark: Understand the whole fight at a glance, and keep control of it. Powered by Norgannon." width="100%">
+</p>
+
 # Bulwark
 
 A combat and aggro toolkit for WoW Forever, on Blizzard's own nameplates. Each enemy's health bar is coloured by who the
