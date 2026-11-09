@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.6, 2026-11-08
+
+- Click to target, still being worked out: the 0.7.5 log showed every click reaching the row and the game running its
+  "target" action, but the target not changing. Right click now targets through a `/target nameplateN` macro instead,
+  and the click log notes whether the mob was already your target before each click, so the next fight shows which
+  route the game honours.
+
 ## 0.7.5, 2026-11-08
 
 - Clicking a mob-list row should now target the mob. The rows were the game's unit-frame buttons, whose click first
