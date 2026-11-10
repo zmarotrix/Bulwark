@@ -19,7 +19,7 @@ local Core = NorgannonCore
 
 if not (Core and Core.NewAddon) then
   Bulwark = { disabled = true }
-  print("Bulwark needs NorgannonDB Core 1.26 or newer; it is turned off.")
+  print("Bulwark needs Norgannon Core 1.26 or newer; it is turned off.")
   return
 end
 
