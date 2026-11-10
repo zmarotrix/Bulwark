@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 (2026-11-09)
+
+- Asks for Norgannon Core 1.26 or newer, the first Core with everything it uses. An older Core now gets a clear "update Norgannon Core" message instead of errors.
+
 ## 0.8.0, 2026-11-08
 
 - **Click to target is gone.** Tested in game with a click log: every click reached its row and the game ran the target
