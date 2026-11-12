@@ -125,6 +125,7 @@ Core:NewAddon("bulwark", {
     dps = { setMode("dps"), "never tank mode" },
     auto = { setMode("auto"), "tank mode when your role, form or stance says so" },
     list = { function() if B.MobList then B.MobList:Preview() end end, "show the mob list with sample mobs, to move it" },
+    marks = { function() if B.MobList then B.MobList:MarkReport() end end, "say what each mob-list row got for its raid mark" },
     status = { function()
       B:Print(("%s. Mode: %s (%s now). Flash: %s at %d%%.")
         :format(B.db.enabled and "On" or "Off", MODES[B.db.mode] or B.db.mode, B:TankMode() and "tanking" or "not tanking",

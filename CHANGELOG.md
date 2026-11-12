@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.2, 2026-11-11
+
+- **Raid marks show on the mob list again**, at the left of each bar. The game hands add-ons a mob's mark as a hidden
+  value; the list now draws it straight onto the icon, which the game allows, and if the mob gives nothing it takes the
+  mark Blizzard's own plate is showing.
+- `/bulwark marks` says what each row got for its mark, in case one still doesn't show.
+
 ## 0.8.1 (2026-11-09)
 
 - Asks for Norgannon Core 1.26 or newer, the first Core with everything it uses. An older Core now gets a clear "update Norgannon Core" message instead of errors.

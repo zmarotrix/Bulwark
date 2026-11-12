@@ -580,6 +580,61 @@ local function sortedDots(key)
   return out
 end
 
+local function kindOf(v)
+  if v == nil then return "nothing" end
+  if IsSecret(v) then return "a hidden value" end
+  return tostring(v)
+end
+
+---Draw a mark (1-8, maybe secret) on a texture. The sprite-sheet call takes a secret index from add-on code; Blizzard's
+---SetRaidTargetIconTexture wraps the same call, kept as a fallback. Returns how it was drawn, or nil and the error.
+local function drawMark(tex, index)
+  local ok, err = pcall(tex.SetSpriteSheetCell, tex, index, 4, 4)
+  if ok then return "sprite" end
+  local ok2, err2 = pcall(SetRaidTargetIconTexture, tex, index)
+  if ok2 then return "blizzard" end
+  return nil, tostring(err or err2)
+end
+L.DrawMark = drawMark
+
+---The mob's raid mark, from the unit, else from the one Blizzard's own plate is showing.
+function L:MarkOf(u)
+  local okI, index = Core.Call(GetRaidTargetIndex, u)
+  local from = "unit"
+  if not okI or index == nil then
+    local NP = rawget(_G, "C_NamePlate")
+    local okP, plate = pcall(NP.GetNamePlateForUnit, u)
+    local rf = okP and plate and not IsSecret(plate) and plate.UnitFrame and plate.UnitFrame.RaidTargetFrame
+    index, from = rf and rf.raidTargetIndex, "plate"
+  end
+  return index, from, okI and index
+end
+
+---Paint a row's mark; remembers what happened for /bulwark marks.
+function L:PaintMark(r, u)
+  local index, from = self:MarkOf(u)
+  r.markFrom, r.markErr = from, nil
+  if index == nil then r.mark:Hide() r.markHow = nil return end
+  local how, err = drawMark(r.mark, index)
+  r.markHow, r.markErr = how, err
+  if how then r.mark:Show() else r.mark:Hide() end
+end
+
+---/bulwark marks: what each row got for its raid mark, to find out why one doesn't show.
+function L:MarkReport()
+  local any = false
+  for i, r in ipairs(self.rows) do
+    if r:IsShown() and r.unit then
+      any = true
+      local okI, index = Core.Call(GetRaidTargetIndex, r.unit)
+      B:Print(("Row %d: the game gave %s for its mark; %s."):format(i, okI and kindOf(index) or "an error",
+        r.markHow and ("drawn (" .. r.markHow .. (r.markFrom == "plate" and ", read from Blizzard's plate" or "") .. ")")
+        or (r.markErr and ("not drawn: " .. r.markErr:sub(1, 80)) or "no mark")))
+    end
+  end
+  if not any then B:Print("No mobs in the list. Mark one in a fight and try again.") end
+end
+
 ---Fill a row from a live mob.
 function L:Paint(r, u, key)
   r.unit = u
@@ -587,8 +642,7 @@ function L:Paint(r, u, key)
   if not (okN and Core.SetSecret(r.name, "SetText", name)) then r.name:SetText("") end
   paintHealth(r, u)
   paintBar(r, u)
-  local okI, index = Core.Call(GetRaidTargetIndex, u)
-  if okI and index ~= nil and pcall(SetRaidTargetIconTexture, r.mark, index) then r.mark:Show() else r.mark:Hide() end
+  self:PaintMark(r, u)
   paintDots(r, sortedDots(key or keyOf(u)))
 end
 
@@ -644,7 +698,7 @@ function L:Refresh()
       local c = tone(B:ColorFor({ who = s.who, tankMode = B:TankMode() }))
       r.bar:SetStatusBarColor(c[1], c[2], c[3])
       r.warn:SetShown(s.flash and true or false)
-      if s.mark then SetRaidTargetIconTexture(r.mark, s.mark) r.mark:Show() else r.mark:Hide() end
+      if s.mark and drawMark(r.mark, s.mark) then r.mark:Show() else r.mark:Hide() end
       local list = {}
       for j, d in ipairs(s.dots) do list[j] = { icon = d[1], expires = now() + d[2], stacks = d[3] } end
       paintDots(r, list)
