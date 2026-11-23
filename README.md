@@ -8,12 +8,16 @@ A combat and aggro toolkit for WoW Forever, on Blizzard's own nameplates. Each e
 mob is on and flashes when you're about to lose it, and raid marks are drawn big enough to find in a crowd.
 Powered by NorgannonDB.
 
-| Colour | Tanking | Not tanking |
+| Colour | Always (the default), Tank | Not tanking |
 |---|---|---|
 | Green | on you | on someone else |
 | Red | on someone who isn't a tank | on you |
 | Cyan | on another tank | on a tank |
 | Grey | on nobody | on nobody |
+
+Auto uses the first column while you're the tank (your role, a tanking form or stance, or alone) and the second
+otherwise. The flash always knows whether you're the tank: it warns a tank before losing a mob, anyone else before
+pulling one.
 
 **The mob list**, in the spirit of Cursive: a small window with every enemy in the fight, its health, who it's on (the
 colours above), and your own DoTs and debuffs on it with the seconds left. Raid marks come first, skull at the top, and

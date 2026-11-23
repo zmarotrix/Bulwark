@@ -3,7 +3,7 @@
 ## 0.9.0, 2026-11-23
 
 - **Always is the new default mode.** Plates change colour the same way whatever you're doing: on you is green, on
-  someone else is red, on the tank is blue. Before, Auto swapped green and red whenever you weren't the tank, so the
+  someone else is red, another tank is cyan. Before, Auto swapped green and red whenever you weren't the tank, so the
   colours looked different out of a tanking form or stance.
 - The flash still knows whether you're the tank: tanking, it warns before you lose a mob; otherwise, before you pull one.
 - If you were on Auto (the old default) you're moved to Always once. Auto, Tank and Not tanking are still in the
