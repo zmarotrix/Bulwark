@@ -29,7 +29,8 @@ local IsSecret = Core.IsSecret
 
 B.DEFAULTS = {
   enabled = true,
-  mode = "auto",          -- "auto": tank mode when you're a tank (role, stance or form) or alone; "tank"; "dps"
+  mode = "always",        -- "always": tank colours everywhere, the flash follows whether you're the tank;
+                          -- "auto": tank mode when you're a tank (role, stance or form) or alone; "tank"; "dps"
   flash = true,
   flashAt = 90,           -- flash when someone else's threat reaches this % of what it takes to pull the mob off you
   threatText = {
@@ -96,7 +97,7 @@ B.SCHEMES = {
   } },
 }
 
-local MODES = { auto = "Auto", tank = "Tank", dps = "Not tanking" }
+local MODES = { always = "Always", auto = "Auto", tank = "Tank", dps = "Not tanking" }
 
 local function setEnabled(on)
   B.db.enabled = on
@@ -121,6 +122,7 @@ Core:NewAddon("bulwark", {
   commands = {
     on = { function() setEnabled(true) end, "colour enemy nameplates" },
     off = { function() setEnabled(false) end, "give Blizzard's colours back" },
+    always = { setMode("always"), "tank colours always; the flash follows whether you're the tank" },
     tank = { setMode("tank"), "always tank mode" },
     dps = { setMode("dps"), "never tank mode" },
     auto = { setMode("auto"), "tank mode when your role, form or stance says so" },
@@ -214,13 +216,26 @@ function B:InGroup()
   return (plain(IsInGroup) or plain(IsInRaid)) and true or false
 end
 
----Tank mode or not, from the setting.
+---Whether you're the tank right now: alone, or your role, form or stance says so.
+function B:Tanking()
+  if not self:InGroup() then return true end
+  return self:IsTank("player")
+end
+
+---Tank colours or not, from the setting: Always and Tank always, Not tanking never, Auto when you're the tank.
 function B:TankMode()
+  local m = self.db.mode
+  if m == "tank" or m == "always" then return true end
+  if m == "dps" then return false end
+  return self:Tanking()
+end
+
+---Which flash: "losing it" for a tank, "about to pull it" for anyone else. Always and Auto ask whether you're the tank.
+function B:FlashAsTank()
   local m = self.db.mode
   if m == "tank" then return true end
   if m == "dps" then return false end
-  if not self:InGroup() then return true end
-  return self:IsTank("player")
+  return self:Tanking()
 end
 
 -------------------------------------------------------------------------------------------
@@ -302,9 +317,10 @@ function B:Verdict(plate)
   end
 
   local v = { tankMode = tankMode }
+  local flashTank = self:FlashAsTank()
   if status >= 2 then
     v.who = "me"
-    if tankMode and self.db.flash then
+    if flashTank and self.db.flash then
       if status == 2 then
         v.flash = true   -- you have it, but someone's above you and about to take it
       else
@@ -315,7 +331,7 @@ function B:Verdict(plate)
   else
     v.who = self:Holder(plate)
     if v.who == "none" and plain(UnitIsUnit, plate .. "target", "player") then v.who = "me" end
-    if not tankMode and self.db.flash then
+    if not flashTank and self.db.flash then
       if status == 1 then
         v.flash = true   -- you're above the tank and about to pull it
       else
@@ -480,6 +496,11 @@ end
 
 Core:OnLogin(function()
   if not B.db then return end
+  -- 0.9.0: Always became the default; Auto was the old default, so move it over once
+  if not B.db.modeAlways then
+    if B.db.mode == "auto" then B.db.mode = "always" end
+    B.db.modeAlways = true
+  end
   hookBlizzard()
   B:LearnGroup()
   local function onPlate(_, unit) if isPlate(unit) then B:Update(unit) end end

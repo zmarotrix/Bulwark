@@ -43,8 +43,8 @@ Core:OnLogin(function()
 
   list:Header("Bulwark")
   list:Toggle("Colour enemy nameplates", "Blizzard's health bar on each enemy plate takes the colour of who the mob is on. Mobs out of combat keep Blizzard's colour.", opt("enabled"))
-  list:Dropdown("Mode", "Auto is tank mode when your role is Tank, you're in a tanking form or stance, or you're alone.",
-    { { "auto", "Auto" }, { "tank", "Tank" }, { "dps", "Not tanking" } }, opt("mode"))
+  list:Dropdown("Mode", "Always: on you is green and on someone else is red, whatever you're doing; the flash still knows whether you're the tank. Auto: those colours only when your role is Tank, you're in a tanking form or stance, or you're alone, and swapped otherwise. Tank and Not tanking fix it one way.",
+    { { "always", "Always" }, { "auto", "Auto" }, { "tank", "Tank" }, { "dps", "Not tanking" } }, opt("mode"))
 
   list:Header("Flash")
   list:Toggle("Flash when you're about to lose it", "Tanking: someone is above you, or their threat is close to pulling. Not tanking: you're close to pulling it off the tank.", opt("flash"))

@@ -20,6 +20,6 @@ colours above), and your own DoTs and debuffs on it with the seconds left. Raid 
 your target has a gold edge. Hover a row for the mob's tooltip. The Bulwark handle above the rows always shows while the list is on (dimmed when it's empty), and the list grows downward from it. The game hides auras from add-ons in combat, so the timers come from your own casts on
 your target, and are corrected by what Bulwark reads out of combat.
 
-`/bulwark` opens the settings. Also: `on`, `off`, `tank`, `dps`, `auto`, `list` (preview the mob list), `status`.
+`/bulwark` opens the settings. Also: `on`, `off`, `always` (the default: tank colours whatever you're doing), `tank`, `dps`, `auto`, `list` (preview the mob list), `marks`, `status`.
 
 Copyright (c) 2026 Maro. All rights reserved.
