@@ -88,7 +88,8 @@ Core:OnLogin(function()
   list:Dropdown("Colour scheme", "Ready-made colours, including colour-blind friendly ones. Changing any colour below makes it your own.",
     schemes, function() return B.db.scheme end,
     function(v) if v ~= "custom" then B:ApplyScheme(v) list:Refresh() end end)
-  -- each colour: a framed swatch you click to change it, and Reset beside it only once it differs from the scheme
+  -- each colour: a swatch in a recessed field you click to change it, and Reset beside it only once it differs from the
+  -- scheme
   local C = UI.C
   local function same(a, b) return math.abs(a[1] - b[1]) < 0.005 and math.abs(a[2] - b[2]) < 0.005 and math.abs(a[3] - b[3]) < 0.005 end
   local function schemeColor(key)
@@ -109,11 +110,10 @@ Core:OnLogin(function()
     local swatch = CreateFrame("Button", nil, holder)
     swatch:SetSize(52, 24)
     swatch:SetPoint("RIGHT", holder, "RIGHT", 0, 0)
-    swatch.box = UI.Box(swatch, "BACKGROUND", 0)
-    swatch.fill = swatch:CreateTexture(nil, "ARTWORK")
-    swatch.fill:SetPoint("TOPLEFT", 3, -3)
-    swatch.fill:SetPoint("BOTTOMRIGHT", -3, 3)
-    local function paint(hover) swatch.box:Set(hover and C.goldSoft or C.frameGold, C.frameDark) end
+    swatch.box = UI.Field(swatch, "BACKGROUND", 0)
+    swatch.fill = UI.Round(swatch, "ARTWORK", 0, 4, nil, -3)
+    -- gold, as everything on the game's own settings pages
+    local function paint(hover) swatch.box:Set(hover and C.goldSoft or UI.Mix(C.line, C.goldSoft, .22), hover) end
     paint(false)
     swatch:SetScript("OnEnter", function(self)
       paint(true)
@@ -128,7 +128,7 @@ Core:OnLogin(function()
     reset:SetPoint("RIGHT", swatch, "LEFT", -12, 0)
     r.refresh = function()
       local c = B.db.colors[key]
-      swatch.fill:SetColorTexture(c[1], c[2], c[3], 1)
+      swatch.fill:SetColor(c, 1)
       reset:SetShown(not same(c, schemeColor(key)))
     end
   end

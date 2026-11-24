@@ -19,7 +19,7 @@ local Core = NorgannonCore
 
 if not (Core and Core.NewAddon) then
   Bulwark = { disabled = true }
-  print("Bulwark needs Norgannon Core 1.26 or newer; it is turned off.")
+  print("Bulwark needs Norgannon Core 1.35 or newer; it is turned off.")
   return
 end
 
@@ -116,7 +116,7 @@ end
 -- The suite's plumbing: version check, BulwarkDB with its defaults, the slash command, the minimap row and the add-on
 -- menu. Bulwark has no window: a click opens its settings, and Shift-click turns it on or off.
 Core:NewAddon("bulwark", {
-  folder = ADDON, api = { 1, 26 },
+  folder = ADDON, api = { 1, 35 },
   db = "BulwarkDB", defaults = B.DEFAULTS,
   slash = { "/bulwark" },
   commands = {

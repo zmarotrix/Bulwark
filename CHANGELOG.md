@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.9.2, 2026-11-23
+
+- The mob list's panel no longer has a darker rim just inside its edge. 0.9.1's shadow reached 3 px under it, which showed
+  over bright ground when the panel was see-through.
+- Needs Norgannon Core 1.35 or newer.
+
+## 0.9.1, 2026-11-23
+
+- **The mob list matches the suite's new windows.** The gold box behind it is a rounded panel with a soft shadow and a
+  touch of Bulwark's blue along the top, all fading with Background. The shadow falls outside the panel, so it doesn't
+  darken what's behind a see-through one (0.9.1 still did for 3 px inside the edge; see 0.9.2).
+- Rows sit in recesses. Your target's row keeps its gold edge, and now glows softly.
+- The colour swatches in settings are rounded and light up under the mouse.
+- Needs Norgannon Core 1.33 or newer.
+
 ## 0.9.0, 2026-11-23
 
 - **Always is the new default mode.** Plates change colour the same way whatever you're doing: on you is green, on

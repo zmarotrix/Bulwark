@@ -311,8 +311,12 @@ end
 
 L.StartDrag, L.StopDrag = startDrag, stopDrag
 
----One row's pieces, in the suite's look: a dark well with a 1px edge (gold on your target), the bar inside it, the
----name in the suite's bold face, and your debuffs as framed icons. A row drags the list and shows the mob's tooltip.
+local BAR_INSET = 2      -- the bar inside its field
+local PANEL_RADIUS = 10  -- the panel's round corners, as the suite's windows
+
+---One row's pieces, in the suite's look: a recessed field (lit gold on your target, a signal rather than a frame), the
+---bar inside it, the name in the suite's bold face, and your debuffs as framed icons. A row drags the list and shows the
+---mob's tooltip.
 function L:MakeRow(f)
   local r = CreateFrame("Frame", nil, f)
   r:EnableMouse(true)
@@ -322,10 +326,10 @@ function L:MakeRow(f)
   r.mark = r:CreateTexture(nil, "ARTWORK")
   r.mark:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
   r.well = CreateFrame("Frame", nil, r)
-  r.box = UI.Box(r.well, "BACKGROUND", 0)
+  r.box = UI.Field(r.well, "BACKGROUND", 0)
   r.bar = CreateFrame("StatusBar", nil, r.well)
-  r.bar:SetPoint("TOPLEFT", 1, -1)
-  r.bar:SetPoint("BOTTOMRIGHT", -1, 1)
+  r.bar:SetPoint("TOPLEFT", BAR_INSET, -BAR_INSET)
+  r.bar:SetPoint("BOTTOMRIGHT", -BAR_INSET, BAR_INSET)
   r.bar:SetStatusBarTexture(UI.TEX.white)
   r.bar:SetMinMaxValues(0, 1)
   r.bar:SetValue(1)
@@ -362,9 +366,12 @@ function L:MakeRow(f)
     d:Hide()
     r.dots[i] = d
   end
+  local quiet = UI.Mix(UI.C.line, UI.Accent("bulwark"), .22)
   function r:SetTarget(on)
+    on = on and true or false
+    if self.isTarget == on then return end   -- every repaint of the row asks
     self.isTarget = on
-    self.box:Set(on and UI.C.gold or (self.hover and UI.C.goldSoft or UI.C.black), { UI.C.inset[1], UI.C.inset[2], UI.C.inset[3], 0.85 })
+    self.box:Set(on and UI.C.gold or quiet, on)
   end
   r:SetTarget(false)
   r:SetScript("OnEnter", function(self) L.Tooltip(self, self.unit) end)
@@ -402,7 +409,7 @@ function L:LayoutParts(r)
   r.well:ClearAllPoints()
   r.well:SetPoint("LEFT", r.mark, "RIGHT", 4, 0)
   r.well:SetSize(w, h)
-  r.sheen:SetHeight(math.max(1, math.floor((h - 2) / 2)))
+  r.sheen:SetHeight(math.max(1, math.floor((h - 2 * BAR_INSET) / 2)))
   r.name:SetFontObject(UI.Font("bold", size))
   r.name:SetTextColor(UI.C.text[1], UI.C.text[2], UI.C.text[3])
   r.hp:SetFontObject(UI.Font("body", size))
@@ -443,8 +450,9 @@ function L:Build()
 end
 
 ---The list's look, on the plain frame or the secure one. On top, a handle with the Bulwark mark and name, always
----readable and the thing you drag. Below it the rows, on a stone panel framed in gold like every suite window, faded
----by the Background setting (none at all by default, as Cursive players are used to).
+---readable and the thing you drag. Below it the rows, on a panel of the suite's materials, faded by the Background
+---setting (none at all by default, as Cursive players are used to). It's see-through, so its stone isn't tinted (a tint
+---cost text contrast over snow), and its shadow is only what falls outside it.
 function L:Dress(f)
   local C = UI.C
   f:SetSize(240, 60)
@@ -456,8 +464,11 @@ function L:Dress(f)
   f.panel:SetPoint("TOPLEFT", 0, -HANDLE_H)
   f.panel:SetPoint("BOTTOMRIGHT")
   f.panel:SetFrameLevel(math.max(0, f:GetFrameLevel()))
-  f.panel.box = UI.Box(f.panel, "BACKGROUND", -6)
-  f.panel.box:Set(C.frameGold, C.stone2, C.stone)
+  f.panel.shadow = UI.ShadowRing(f.panel, -8)
+  f.panel.bg = UI.Round(f.panel, "BACKGROUND", -4, PANEL_RADIUS)
+  f.panel.bg:SetColor(C.stone)
+  UI.Wash(f.panel, "BACKGROUND", -3, PANEL_RADIUS, 18):SetColor(UI.Accent("bulwark"), .16)   -- 28 px in all: one row's panel
+  UI.Sheen(f.panel, "BACKGROUND", -2)
   f.handle = CreateFrame("Frame", nil, f)
   f.handle:SetPoint("TOPLEFT")
   f.handle:SetHeight(HANDLE_H)
